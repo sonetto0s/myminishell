@@ -3,9 +3,13 @@
 ## 项目简介
  这是一个基于 Linux 的MiniShell,用来实现进程控制与命令解析。
 
-## 当前版本: V0.2
+## 当前版本: V0.2.1
 
 ## 更新日志
+- V0.2.1:
+- 新增tokenize,取缔原有strtok函数,优化指令解析能力
+- 新增 Token/TokenList 结构体,引入工程化模板
+- 引入execvp函数,正式开始执行进程shell
 
 - V0.2:
 - 新增parser文件,用以解析指令输入
@@ -15,6 +19,10 @@
 
 ## 技术节点
 ```
+V0.2.1:
+tokenize模块编写
+execvp引入
+进一步提升指令解析能力
 V0.2:
 strtok函数调用
 实现初步分解指令功能
@@ -32,6 +40,7 @@ fgets输入与strncmp函数解析指令
 ## 项目结构
 
 ```
+.
 ├── build
 ├── common
 ├── docs
@@ -39,6 +48,7 @@ fgets输入与strncmp函数解析指令
 │   ├── debug_log.md
 │   └── module.md
 ├── include
+│   ├── executor.h
 │   ├── log.h
 │   ├── parser.h
 │   ├── shell.h
@@ -46,9 +56,11 @@ fgets输入与strncmp函数解析指令
 ├── Makefile
 ├── README.md
 └── src
+    ├── executor.c
     ├── log.c
     ├── main.c
     ├── parser.c
     ├── shell.c
     └── utils.c
+
 ```

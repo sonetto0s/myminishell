@@ -7,6 +7,7 @@ typedef enum{
 }ShellStatus;
 
 #include "utils.h"
+#include "executor.h"
 #include "parser.h"
 #include <stdio.h>
 

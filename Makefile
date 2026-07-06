@@ -1,11 +1,12 @@
 CC = gcc
-CFLAGS = -Wall -Iinclude
+CFLAGS = -Wall -Iinclude -g
 
 SRC = src/main.c \
 	  src/shell.c \
 	  src/utils.c  \
 	  src/log.c     \
-	  src/parser.c
+	  src/parser.c   \
+	  src/executor.c
 OBJ = $(SRC:.c=.o)
 
 TARGET = minishell

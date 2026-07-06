@@ -8,16 +8,16 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Mon Jul  6 15:07:36 2026
+# Make data base, printed on Mon Jul  6 16:44:46 2026
 
 # Variables
 
-# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 9)
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 10)
 OBJ = $(SRC:.c=.o)
 # environment
 LC_ALL = C
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 4)
-SRC = src/main.c src/shell.c src/utils.c src/log.c src/parser.c
+SRC = src/main.c src/shell.c src/utils.c src/log.c src/parser.c src/executor.c
 # environment
 MXC_BIN_DIR = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/node_modules/@microsoft/mxc-sdk/bin
 # environment
@@ -64,6 +64,8 @@ MAKEFLAGS = pqrR
 CURDIR := /home/matilda/桌面/Projects/myminishell
 # environment
 LESSOPEN = | /usr/bin/lesspipe %s
+# environment
+VSCODE_L10N_BUNDLE_LOCATION = vscode-local:/c%3A/Users/%E9%99%88/.vscode/extensions/ms-ceintl.vscode-language-pack-zh-hans-1.125.2026062000/translations/extensions/vscode.markdown-language-features.i18n.json
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # environment
@@ -155,7 +157,7 @@ LC_PAPER = en_US.UTF-8
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 2)
-CFLAGS = -Wall -Iinclude
+CFLAGS = -Wall -Iinclude -g
 # environment
 VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-f465bf6e-1541-484c-8892-7459a229f3ac.sock
 # environment
@@ -172,12 +174,12 @@ PAPERSIZE = letter
 .RECIPEPREFIX := 
 # automatic
 <F = $(notdir $<)
- 
 # default
 SUFFIXES := 
-# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 11)
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 12)
 TARGET = minishell
 # default
+ 
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink load
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 1)
 CC = gcc
@@ -188,7 +190,7 @@ LC_IDENTIFICATION = en_US.UTF-8
 # environment
 SSH_CONNECTION = 192.168.84.1 52723 192.168.84.132 22
 # variable set hash-table stats:
-# Load=87/1024=8%, Rehash=0, Collisions=5/120=4%
+# Load=88/1024=9%, Rehash=0, Collisions=6/121=5%
 
 # Pattern-specific Variable Values
 
@@ -202,17 +204,17 @@ SSH_CONNECTION = 192.168.84.1 52723 192.168.84.132 22
 # Implicit Rules
 
 %.o: %.c
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 17):
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 18):
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # 1 implicit rules, 0 (0.0%) terminal.
 # Files
 
-minishell: src/main.o src/shell.o src/utils.o src/log.o src/parser.o
+minishell: src/main.o src/shell.o src/utils.o src/log.o src/parser.o src/executor.o
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 14):
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 15):
 	$(CC) $(OBJ) -o $(TARGET)
 
 # Not a target:
@@ -225,8 +227,14 @@ clean:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 20):
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 21):
 	rm -f $(OBJ) $(TARGET)
+
+# Not a target:
+src/executor.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
 
 # Not a target:
 src/shell.o:
@@ -268,24 +276,24 @@ all:
 # Not a target:
 /home/matilda/桌面/Projects/myminishell/Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2026-07-06 14:59:59.502751654
+#  Last modified 2026-07-06 16:40:08.118129486
 #  File has been updated.
 #  Successfully updated.
 
 # files hash-table stats:
-# Load=11/1024=1%, Rehash=0, Collisions=0/26=0%
+# Load=12/1024=1%, Rehash=0, Collisions=0/28=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 15 / storage = 188 B / avg = 12 B
-# current buf: size = 8162 B / used = 188 B / count = 15 / avg = 12 B
+# strcache buffers: 1 (0) / strings = 16 / storage = 203 B / avg = 12 B
+# current buf: size = 8162 B / used = 203 B / count = 16 / avg = 12 B
 
-# strcache performance: lookups = 20 / hit rate = 25%
+# strcache performance: lookups = 21 / hit rate = 23%
 # hash-table stats:
-# Load=15/8192=0%, Rehash=0, Collisions=0/20=0%
-# Finished Make data base on Mon Jul  6 15:07:36 2026
+# Load=16/8192=0%, Rehash=0, Collisions=0/21=0%
+# Finished Make data base on Mon Jul  6 16:44:46 2026
 
  
