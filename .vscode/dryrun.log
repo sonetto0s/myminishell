@@ -1,0 +1,5 @@
+make -f /home/matilda/桌面/Projects/myminishell/Makefile --dry-run --keep-going --print-directory
+make: Entering directory '/home/matilda/桌面/Projects/myminishell'
+gcc src/main.o src/shell.o src/utils.o src/log.o src/parser.o -o minishell
+make: Leaving directory '/home/matilda/桌面/Projects/myminishell'
+ 

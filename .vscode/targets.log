@@ -1,0 +1,294 @@
+make all -f /home/matilda/桌面/Projects/myminishell/Makefile --print-data-base --no-builtin-variables --no-builtin-rules --question
+make: *** No rule to make target 'all'.  Stop.
+
+# GNU Make 4.3
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2020 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Mon Jul  6 15:00:01 2026
+
+# Variables
+
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 9)
+OBJ = $(SRC:.c=.o)
+# environment
+LC_ALL = C
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 4)
+SRC = src/main.c src/shell.c src/utils.c src/log.c src/parser.c
+# environment
+MXC_BIN_DIR = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/node_modules/@microsoft/mxc-sdk/bin
+# environment
+VSCODE_RECONNECTION_GRACE_TIME = 10800000
+# environment
+LC_NAME = en_US.UTF-8
+# environment
+LC_NUMERIC = en_US.UTF-8
+# environment
+VSCODE_CWD = /home/matilda
+# environment
+LC_ADDRESS = en_US.UTF-8
+# default
+MAKE_COMMAND := make
+# environment
+VSCODE_HANDLES_SIGPIPE = true
+# environment
+GIT_CONFIG_VALUE_0 = explicit
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# default
+.VARIABLES := 
+# environment
+ 
+PWD = /home/matilda/桌面/Projects/myminishell
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# environment
+XDG_DATA_DIRS = /usr/share/gnome:/usr/local/share:/usr/share:/var/lib/snapd/desktop
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# automatic
+%F = $(notdir $%)
+# environment
+LANG = C
+# default
+.LOADED := 
+# default
+.INCLUDE_DIRS = /usr/local/include /usr/include /usr/include
+# makefile
+MAKEFLAGS = pqrR
+# makefile
+CURDIR := /home/matilda/桌面/Projects/myminishell
+# environment
+LESSOPEN = | /usr/bin/lesspipe %s
+# environment
+VSCODE_L10N_BUNDLE_LOCATION = vscode-local:/c%3A/Users/%E9%99%88/.vscode/extensions/ms-ceintl.vscode-language-pack-zh-hans-1.125.2026062000/translations/extensions/vscode.markdown-language-features.i18n.json
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+MFLAGS = -pqrR
+# default
+.SHELLFLAGS := -c
+# environment
+COPILOT_OTEL_FILE_EXPORTER_PATH = /dev/null
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 1)
+MAKEFILE_LIST := /home/matilda/桌面/Projects/myminishell/Makefile
+# automatic
+@F = $(notdir $@)
+# environment
+XDG_SESSION_TYPE = tty
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# automatic
+*F = $(notdir $*)
+# environment
+GIT_CONFIG_COUNT = 1
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# environment
+VSCODE_NLS_CONFIG = {"userLocale":"zh-cn","osLocale":"zh-cn","resolvedLanguage":"zh-cn","defaultMessagesFile":"/home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/out/nls.messages.json","languagePack":{"translationsConfigFile":"/home/matilda/.vscode-server/data/clp/4841384af0eded2575184b05ab02e734.zh-cn/tcf.json","messagesFile":"/home/matilda/.vscode-server/data/clp/4841384af0eded2575184b05ab02e734.zh-cn/fcf604774b9f2674b473065736ee75077e256353/nls.messages.json","corruptMarkerFile":"/home/matilda/.vscode-server/data/clp/4841384af0eded2575184b05ab02e734.zh-cn/corrupted.info"},"locale":"zh-cn","availableLanguages":{"*":"zh-cn"},"_languagePackId":"4841384af0eded2575184b05ab02e734.zh-cn","_languagePackSupport":true,"_translationsConfigFile":"/home/matilda/.vscode-server/data/clp/4841384af0eded2575184b05ab02e734.zh-cn/tcf.json","_cacheRoot":"/home/matilda/.vscode-server/data/clp/4841384af0eded2575184b05ab02e734.zh-cn","_resolvedLanguagePackCoreLocation":"/home/matilda/.vscode-server/data/clp/4841384af0eded2575184b05ab02e734.zh-cn/fcf604774b9f2674b473065736ee75077e256353","_corruptedFile":"/home/matilda/.vscode-server/data/clp/4841384af0eded2575184b05ab02e734.zh-cn/corrupted.info"}
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# makefile
+SHELL = /bin/sh
+# default
+MAKECMDGOALS := all
+# environment
+SHLVL = 0
+# environment
+MAKELEVEL := 0
+# default
+MAKE = $(MAKE_COMMAND)
+# environment
+PATH = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/bin/remote-cli:/home/matilda/bin:/home/matilda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+# default
+MAKEFILES := 
+# environment
+LANGUAGE = zh_CN:en
+# environment
+LC_MONETARY = en_US.UTF-8
+# automatic
+^F = $(notdir $^)
+# environment
+LC_TIME = en_US.UTF-8
+# environment
+APPLICATION_INSIGHTS_NO_STATSBEAT = true
+# environment
+SSH_CLIENT = 192.168.84.1 52723 22
+# environment
+LC_TELEPHONE = en_US.UTF-8
+# environment
+LESSCLOSE = /usr/bin/lesspipe %s %s
+# automatic
+?F = $(notdir $?)
+# environment
+LS_COLORS = 
+# automatic
++F = $(notdir $+)
+# environment
+GIT_CONFIG_KEY_0 = safe.bareRepository
+# 'override' directive
+GNUMAKEFLAGS := 
+# environment
+BROWSER = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/bin/helpers/browser.sh
+# environment
+LOGNAME = matilda
+# makefile
+.DEFAULT_GOAL := minishell
+# environment
+USER = matilda
+# default
+MAKE_VERSION := 4.3
+# environment
+DEBUGINFOD_URLS = https://debuginfod.ubuntu.com 
+# environment
+LC_MEASUREMENT = en_US.UTF-8
+# environment
+_ = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/node
+# environment
+LC_PAPER = en_US.UTF-8
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 2)
+CFLAGS = -Wall -Iinclude
+# environment
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-5a3f612a-0d30-4b5a-a77d-3d683b154541.sock
+# environment
+XDG_SESSION_CLASS = user
+# environment
+HOME = /home/matilda
+# environment
+ELECTRON_RUN_AS_NODE = 1
+# environment
+XDG_SESSION_ID = 3
+# environment
+PAPERSIZE = letter
+# default
+.RECIPEPREFIX := 
+# automatic
+<F = $(notdir $<)
+# default
+SUFFIXES := 
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 11)
+TARGET = minishell
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink load
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 1)
+CC = gcc
+# environment
+VSCODE_ESM_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+LC_IDENTIFICATION = en_US.UTF-8
+# environment
+SSH_CONNECTION = 192.168.84.1 52723 192.168.84.132 22
+# variable set hash-table stats:
+# Load=88/1024=9%, Rehash=0, Collisions=6/121=5%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+
+# No files, no impossibilities in 0 directories.
+
+# Implicit Rules
+
+%.o: %.c
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 17):
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# 1 implicit rules, 0 (0.0%) terminal.
+# Files
+
+minishell: src/main.o src/shell.o src/utils.o src/log.o src/parser.o
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 14):
+	$(CC) $(OBJ) -o $(TARGET)
+
+# Not a target:
+src/utils.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 20):
+	rm -f $(OBJ) $(TARGET)
+
+# Not a target:
+src/shell.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+src/log.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+src/main.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+src/parser.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+all:
+#  Command line target.
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has not been updated.
+
+# Not a target:
+/home/matilda/桌面/Projects/myminishell/Makefile:
+#  Implicit rule search has been done.
+ 
+#  Last modified 2026-07-06 14:59:59.502751654
+#  File has been updated.
+#  Successfully updated.
+
+# files hash-table stats:
+# Load=11/1024=1%, Rehash=0, Collisions=0/26=0%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 15 / storage = 188 B / avg = 12 B
+# current buf: size = 8162 B / used = 188 B / count = 15 / avg = 12 B
+
+# strcache performance: lookups = 20 / hit rate = 25%
+# hash-table stats:
+# Load=15/8192=0%, Rehash=0, Collisions=0/20=0%
+# Finished Make data base on Mon Jul  6 15:00:01 2026
+
+ 
