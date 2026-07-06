@@ -3,14 +3,21 @@
 ## 项目简介
  这是一个基于 Linux 的MiniShell,用来实现进程控制与命令解析。
 
-## 当前版本: V0.1
+## 当前版本: V0.2
 
 ## 更新日志
 
-- V0.1：初始化项目,初步构建Shell生命周期框架
+- V0.2:
+- 新增parser文件,用以解析指令输入
+- 实现初步切割指令,识别exit等基础指令
+
+- V0.1:初始化项目,初步构建MiniShell生命周期框架
 
 ## 技术节点
 ```
+V0.2:
+strtok函数调用
+实现初步分解指令功能
 V0.1:
 Linux进程模型构建
 fgets输入与strncmp函数解析指令
@@ -18,9 +25,9 @@ fgets输入与strncmp函数解析指令
 ```
 ## 运行方式
 
-Makefile
-make
-./MiniShell
+- Makefile
+- make
+- ./minishell
 
 ## 项目结构
 

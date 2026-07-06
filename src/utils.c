@@ -1,10 +1,9 @@
 #include "utils.h"
-#include <stdio.h>
-#include <string.h>
 
-int is_exit(const char *buff)
+
+int is_exit(const Command*com)
 {
-    return (strcmp(buff, "exit") == 0);
+    return (com->argc > 0 && strcmp(com->argv[0], "exit") == 0);
 }
 
 void trim_line(char *buff)

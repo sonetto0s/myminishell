@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Mon Jul  6 15:00:01 2026
+# Make data base, printed on Mon Jul  6 15:07:36 2026
 
 # Variables
 
@@ -43,7 +43,6 @@ VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # default
 .VARIABLES := 
 # environment
- 
 PWD = /home/matilda/桌面/Projects/myminishell
 # automatic
 %D = $(patsubst %/,%,$(dir $%))
@@ -65,8 +64,6 @@ MAKEFLAGS = pqrR
 CURDIR := /home/matilda/桌面/Projects/myminishell
 # environment
 LESSOPEN = | /usr/bin/lesspipe %s
-# environment
-VSCODE_L10N_BUNDLE_LOCATION = vscode-local:/c%3A/Users/%E9%99%88/.vscode/extensions/ms-ceintl.vscode-language-pack-zh-hans-1.125.2026062000/translations/extensions/vscode.markdown-language-features.i18n.json
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # environment
@@ -160,7 +157,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 2)
 CFLAGS = -Wall -Iinclude
 # environment
-VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-5a3f612a-0d30-4b5a-a77d-3d683b154541.sock
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-f465bf6e-1541-484c-8892-7459a229f3ac.sock
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -175,6 +172,7 @@ PAPERSIZE = letter
 .RECIPEPREFIX := 
 # automatic
 <F = $(notdir $<)
+ 
 # default
 SUFFIXES := 
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 11)
@@ -190,7 +188,7 @@ LC_IDENTIFICATION = en_US.UTF-8
 # environment
 SSH_CONNECTION = 192.168.84.1 52723 192.168.84.132 22
 # variable set hash-table stats:
-# Load=88/1024=9%, Rehash=0, Collisions=6/121=5%
+# Load=87/1024=8%, Rehash=0, Collisions=5/120=4%
 
 # Pattern-specific Variable Values
 
@@ -270,7 +268,6 @@ all:
 # Not a target:
 /home/matilda/桌面/Projects/myminishell/Makefile:
 #  Implicit rule search has been done.
- 
 #  Last modified 2026-07-06 14:59:59.502751654
 #  File has been updated.
 #  Successfully updated.
@@ -289,6 +286,6 @@ all:
 # strcache performance: lookups = 20 / hit rate = 25%
 # hash-table stats:
 # Load=15/8192=0%, Rehash=0, Collisions=0/20=0%
-# Finished Make data base on Mon Jul  6 15:00:01 2026
+# Finished Make data base on Mon Jul  6 15:07:36 2026
 
  
