@@ -1,5 +1,10 @@
 #include "shell.h"
-
+#include "utils.h"
+#include "parser.h"
+#include <stdio.h>
+#include "dispatcher.h"
+#include "executor.h"
+#include "command.h"
 ShellStatus shell_init(void)
 {
     printf(">>shell初始化成功\r\n");
@@ -9,6 +14,7 @@ ShellStatus shell_init(void)
 ShellStatus shell_run(void)
 {
     Command com;
+    command_init(&com);
     while (1)
     {
         printf(">>MiniShell\r\n");
@@ -19,7 +25,7 @@ ShellStatus shell_run(void)
         trim_line(fgetsresult);
         parse_line(fgetsresult,&com);
         dispatcher_command(&com);
-        // execute_execute(&com);
+         //execute_execute(&com);
       
         // else
         // {

@@ -1,16 +1,11 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#define MAX_AGE 16
+
 #define MAX_TOKEN 16
 #define TOKEN_SIZE 64
-#include "string.h"
 
-
-typedef struct Command{
-    int argc;
-    char *argv[MAX_AGE];
-} Command;
+#include "command.h"
 
 typedef struct {
     char text[TOKEN_SIZE];

@@ -1,4 +1,7 @@
 #include "parser.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 int parse_line(char *line,Command *cmd)
 {
@@ -34,8 +37,15 @@ int build_command(TokenList *list,Command *cmd)
     cmd->argc = 0;
     for (int i = 0; i < list->count; i++)
     {
-        cmd->argv[cmd->argc++] = list->token[i].text;
-        if (cmd->argc >= MAX_AGE)
+        if (strcmp(list->token[i].text, ">") == 0)
+        {
+            cmd->redirect.output_file = list->token[i+1].text;
+            i++;
+            continue;
+        }
+            cmd->argv[cmd->argc++] = list->token[i].text;
+
+        if (cmd->argc >= MAX_ARGS)
             break;
     }
     cmd->argv[cmd->argc] = NULL;

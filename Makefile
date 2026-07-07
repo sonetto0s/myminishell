@@ -1,23 +1,27 @@
 CC = gcc
-CFLAGS = -Wall -Iinclude -g
+CFLAGS = -Wall -g
+CFLAGS += -I./include -I./common
 
-SRC = src/main.c \
-	  src/shell.c \
-	  src/utils.c  \
-	  src/log.c     \
-	  src/parser.c   \
-	  src/executor.c  \
-	  src/dispatcher.c \
-	  src/builtin.c
-OBJ = $(SRC:.c=.o)
+SRC = src/main.c   \
+      src/shell.c   \
+      common/utils.c \
+      common/log.c    \
+      src/parser.c 	   \
+      src/executor.c    \
+      src/dispatcher.c   \
+      src/builtin.c	      \
+	  src/command.c	       
 
-TARGET = minishell
+OBJ = $(patsubst %.c, build/%.o, $(SRC))
+
+TARGET = shell
 
 $(TARGET): $(OBJ)
 	$(CC) $(OBJ) -o $(TARGET)
 
-%.o: %.c
+build/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -rf build $(TARGET)

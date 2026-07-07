@@ -1,11 +1,7 @@
 #ifndef BUILTIN_H
 #define BUILTIN_H
 
-#include "parser.h"
-#include <string.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "command.h"
 
 typedef int (*BuiltinHandler)(Command *cmd);
 typedef struct{

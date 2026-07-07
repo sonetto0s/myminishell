@@ -1,8 +1,8 @@
 #ifndef EXECUTOR_H
 #define EXECUTOR_H
 
-#include "parser.h"
+#include "command.h"
 
-int execute_execute(Command *com);
+int execute_command(Command *com);
 
 #endif

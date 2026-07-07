@@ -1,13 +1,5 @@
 make -f /home/matilda/桌面/Projects/myminishell/Makefile --dry-run --keep-going --print-directory
 make: Entering directory '/home/matilda/桌面/Projects/myminishell'
-gcc -Wall -Iinclude -g -c src/main.c -o src/main.o
-gcc -Wall -Iinclude -g -c src/shell.c -o src/shell.o
-gcc -Wall -Iinclude -g -c src/utils.c -o src/utils.o
-gcc -Wall -Iinclude -g -c src/log.c -o src/log.o
-gcc -Wall -Iinclude -g -c src/parser.c -o src/parser.o
-gcc -Wall -Iinclude -g -c src/executor.c -o src/executor.o
-gcc -Wall -Iinclude -g -c src/dispatcher.c -o src/dispatcher.o
-gcc -Wall -Iinclude -g -c src/builtin.c -o src/builtin.o
-gcc src/main.o src/shell.o src/utils.o src/log.o src/parser.o src/executor.o src/dispatcher.o src/builtin.o -o minishell
+make: 'shell' is up to date.
 make: Leaving directory '/home/matilda/桌面/Projects/myminishell'
  

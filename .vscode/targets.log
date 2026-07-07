@@ -8,16 +8,16 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Jul  7 11:59:14 2026
+# Make data base, printed on Tue Jul  7 16:58:10 2026
 
 # Variables
 
-# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 12)
-OBJ = $(SRC:.c=.o)
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 15)
+OBJ = $(patsubst %.c, build/%.o, $(SRC))
 # environment
 LC_ALL = C
-# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 4)
-SRC = src/main.c src/shell.c src/utils.c src/log.c src/parser.c src/executor.c src/dispatcher.c src/builtin.c
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 5)
+SRC = src/main.c src/shell.c common/utils.c common/log.c src/parser.c src/executor.c src/dispatcher.c src/builtin.c src/command.c	       
 # environment
 MXC_BIN_DIR = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/node_modules/@microsoft/mxc-sdk/bin
 # environment
@@ -141,7 +141,7 @@ BROWSER = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256
 # environment
 LOGNAME = matilda
 # makefile
-.DEFAULT_GOAL := minishell
+.DEFAULT_GOAL := shell
 # environment
 USER = matilda
 # default
@@ -156,10 +156,10 @@ _ = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/no
 LC_PAPER = en_US.UTF-8
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
-# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 2)
-CFLAGS = -Wall -Iinclude -g
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 3)
+CFLAGS = -Wall -g -I./include -I./common
 # environment
-VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-fd915ae9-6c25-4d2d-b59f-5b0f63f021a6.sock
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-0e132aa9-2eae-4d90-b661-8ba37400b851.sock
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -172,13 +172,12 @@ XDG_SESSION_ID = 3
 PAPERSIZE = letter
 # default
 .RECIPEPREFIX := 
- 
 # automatic
 <F = $(notdir $<)
 # default
 SUFFIXES := 
-# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 14)
-TARGET = minishell
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 17)
+TARGET = shell
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink load
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 1)
@@ -190,7 +189,7 @@ LC_IDENTIFICATION = en_US.UTF-8
 # environment
 SSH_CONNECTION = 192.168.84.1 61481 192.168.84.132 22
 # variable set hash-table stats:
-# Load=88/1024=9%, Rehash=0, Collisions=6/121=5%
+# Load=88/1024=9%, Rehash=0, Collisions=6/123=5%
 
 # Pattern-specific Variable Values
 
@@ -203,34 +202,17 @@ SSH_CONNECTION = 192.168.84.1 61481 192.168.84.132 22
 
 # Implicit Rules
 
-%.o: %.c
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 20):
+build/%.o: %.c
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 23):
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # 1 implicit rules, 0 (0.0%) terminal.
 # Files
+ 
 
 # Not a target:
-src/dispatcher.o:
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-
-# Not a target:
-src/builtin.o:
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-
-minishell: src/main.o src/shell.o src/utils.o src/log.o src/parser.o src/executor.o src/dispatcher.o src/builtin.o
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 17):
-	$(CC) $(OBJ) -o $(TARGET)
-
-# Not a target:
-src/utils.o:
+build/src/parser.o:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -239,29 +221,23 @@ clean:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 23):
-	rm -f $(OBJ) $(TARGET)
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 27):
+	rm -rf build $(TARGET)
 
 # Not a target:
-src/executor.o:
+build/common/utils.o:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
 
 # Not a target:
-src/shell.o:
+build/src/executor.o:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
 
 # Not a target:
-src/log.o:
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-
-# Not a target:
-src/main.o:
+build/src/command.o:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -273,40 +249,71 @@ src/main.o:
 #  File has not been updated.
 
 # Not a target:
-src/parser.o:
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-
-# Not a target:
 all:
 #  Command line target.
 #  Implicit rule search has been done.
 #  File does not exist.
 #  File has not been updated.
 
+shell: build/src/main.o build/src/shell.o build/common/utils.o build/common/log.o build/src/parser.o build/src/executor.o build/src/dispatcher.o build/src/builtin.o build/src/command.o
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 20):
+	$(CC) $(OBJ) -o $(TARGET)
+
 # Not a target:
 /home/matilda/桌面/Projects/myminishell/Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2026-07-07 11:59:06.242503128
+#  Last modified 2026-07-07 16:57:47.204452208
 #  File has been updated.
 #  Successfully updated.
 
+# Not a target:
+build/src/builtin.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+build/src/main.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+build/common/log.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+build/src/dispatcher.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+build/src/shell.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
 # files hash-table stats:
-# Load=14/1024=1%, Rehash=0, Collisions=0/32=0%
+# Load=15/1024=1%, Rehash=0, Collisions=0/34=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
- 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 18 / storage = 234 B / avg = 13 B
-# current buf: size = 8162 B / used = 234 B / count = 18 / avg = 13 B
+# strcache buffers: 1 (0) / strings = 19 / storage = 310 B / avg = 16 B
+# current buf: size = 8162 B / used = 310 B / count = 19 / avg = 16 B
 
-# strcache performance: lookups = 23 / hit rate = 21%
+# strcache performance: lookups = 24 / hit rate = 20%
 # hash-table stats:
-# Load=18/8192=0%, Rehash=0, Collisions=0/23=0%
-# Finished Make data base on Tue Jul  7 11:59:14 2026
+ 
+# Load=19/8192=0%, Rehash=0, Collisions=0/24=0%
+# Finished Make data base on Tue Jul  7 16:58:10 2026
 
  
