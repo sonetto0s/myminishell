@@ -3,9 +3,13 @@
 ## 项目简介
  这是一个基于 Linux 的MiniShell,用来实现进程控制与命令解析。
 
-## 当前版本: V0.3
+## 当前版本: V0.3.1
 
 ## 更新日志
+- V0.3.1
+- 编写cd/pwd/exit等初等内部指令,完善builtin文件
+- 完善dispatcher逻辑,补全细节
+- 测试运行
 - V0.3:
 - 新增dispatcher骨架,优化原有判断逻辑
 - 新增builtin内建命令解析函数,区分原有execute函数    
@@ -23,6 +27,9 @@
 
 ## 技术节点
 ```
+V0.3.1:
+builtin文件完善
+调试运行结果
 V0.3:
 dispatcher架构整体构建
 指令解析正式区分为builtin与executor两部分

@@ -19,14 +19,37 @@ BuiltinEntry *builtin_lookup(const char *name)
 
 int builtin_cd(Command * cmd)
 {
+    if (cmd->argc <2)
+     {
+         fprintf(stderr,"你cd后面没写东西\r\n");
+         return -1;
+     }
+      
+    if (chdir(cmd->argv[1]) == -1)
+    {
+        perror("chdir");
+        return -1;
+    }
+    
     return 0;
 }
 int builtin_pwd(Command *cmd)
 {
-    return 0;
+    char buff[100];
+    if (getcwd(buff, sizeof(buff)) != NULL)
+    {
+        fprintf(stdout,"%s\n",buff);
+        return 0;
+    }
+    else
+    {
+        perror("getcwd");
+        return -1;
+    }
 }
 
 int builtin_exit(Command *cmd)
 {
+    exit(0);
     return 0;
 }

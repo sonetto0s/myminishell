@@ -3,6 +3,9 @@
 
 #include "parser.h"
 #include <string.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 typedef int (*BuiltinHandler)(Command *cmd);
 typedef struct{

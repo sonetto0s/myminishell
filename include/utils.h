@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int is_exit(const Command *com);
+// int is_exit(const Command *com);
 void trim_line(char *buff);
 
 #endif

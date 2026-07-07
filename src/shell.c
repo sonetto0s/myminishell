@@ -20,11 +20,7 @@ ShellStatus shell_run(void)
         parse_line(fgetsresult,&com);
         dispatcher_command(&com);
         // execute_execute(&com);
-        if (is_exit(&com))
-        {
-            printf(">>MiniShell程序已结束\r\n");
-            break;
-        }
+      
         // else
         // {
         //    printf(">>MiniShell程序关闭失败\r\n");
