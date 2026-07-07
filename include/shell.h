@@ -10,7 +10,7 @@ typedef enum{
 #include "executor.h"
 #include "parser.h"
 #include <stdio.h>
-
+#include "dispatcher.h"
 ShellStatus shell_init(void);
 ShellStatus shell_run(void);
 void shell_cleanup(void);

@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "stdlib.h"
-int execute(Command *com)
+int execute_execute(Command *com)
 {
     pid_t pid=fork();
     if (pid < 0)

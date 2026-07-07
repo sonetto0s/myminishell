@@ -6,7 +6,9 @@ SRC = src/main.c \
 	  src/utils.c  \
 	  src/log.c     \
 	  src/parser.c   \
-	  src/executor.c
+	  src/executor.c  \
+	  src/dispatcher.c \
+	  src/builtin.c
 OBJ = $(SRC:.c=.o)
 
 TARGET = minishell

@@ -3,6 +3,6 @@
 
 #include "parser.h"
 
-int execute(Command *com);
+int execute_execute(Command *com);
 
 #endif

@@ -8,16 +8,16 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Mon Jul  6 16:44:46 2026
+# Make data base, printed on Tue Jul  7 11:59:14 2026
 
 # Variables
 
-# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 10)
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 12)
 OBJ = $(SRC:.c=.o)
 # environment
 LC_ALL = C
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 4)
-SRC = src/main.c src/shell.c src/utils.c src/log.c src/parser.c src/executor.c
+SRC = src/main.c src/shell.c src/utils.c src/log.c src/parser.c src/executor.c src/dispatcher.c src/builtin.c
 # environment
 MXC_BIN_DIR = /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/node_modules/@microsoft/mxc-sdk/bin
 # environment
@@ -121,7 +121,7 @@ LC_TIME = en_US.UTF-8
 # environment
 APPLICATION_INSIGHTS_NO_STATSBEAT = true
 # environment
-SSH_CLIENT = 192.168.84.1 52723 22
+SSH_CLIENT = 192.168.84.1 61481 22
 # environment
 LC_TELEPHONE = en_US.UTF-8
 # environment
@@ -159,7 +159,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 2)
 CFLAGS = -Wall -Iinclude -g
 # environment
-VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-f465bf6e-1541-484c-8892-7459a229f3ac.sock
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-fd915ae9-6c25-4d2d-b59f-5b0f63f021a6.sock
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -172,14 +172,14 @@ XDG_SESSION_ID = 3
 PAPERSIZE = letter
 # default
 .RECIPEPREFIX := 
+ 
 # automatic
 <F = $(notdir $<)
 # default
 SUFFIXES := 
-# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 12)
+# makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 14)
 TARGET = minishell
 # default
- 
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink load
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 1)
 CC = gcc
@@ -188,7 +188,7 @@ VSCODE_ESM_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 LC_IDENTIFICATION = en_US.UTF-8
 # environment
-SSH_CONNECTION = 192.168.84.1 52723 192.168.84.132 22
+SSH_CONNECTION = 192.168.84.1 61481 192.168.84.132 22
 # variable set hash-table stats:
 # Load=88/1024=9%, Rehash=0, Collisions=6/121=5%
 
@@ -204,17 +204,29 @@ SSH_CONNECTION = 192.168.84.1 52723 192.168.84.132 22
 # Implicit Rules
 
 %.o: %.c
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 18):
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 20):
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # 1 implicit rules, 0 (0.0%) terminal.
 # Files
 
-minishell: src/main.o src/shell.o src/utils.o src/log.o src/parser.o src/executor.o
+# Not a target:
+src/dispatcher.o:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 15):
+
+# Not a target:
+src/builtin.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+minishell: src/main.o src/shell.o src/utils.o src/log.o src/parser.o src/executor.o src/dispatcher.o src/builtin.o
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 17):
 	$(CC) $(OBJ) -o $(TARGET)
 
 # Not a target:
@@ -227,7 +239,7 @@ clean:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 21):
+#  recipe to execute (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 23):
 	rm -f $(OBJ) $(TARGET)
 
 # Not a target:
@@ -276,24 +288,25 @@ all:
 # Not a target:
 /home/matilda/桌面/Projects/myminishell/Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2026-07-06 16:40:08.118129486
+#  Last modified 2026-07-07 11:59:06.242503128
 #  File has been updated.
 #  Successfully updated.
 
 # files hash-table stats:
-# Load=12/1024=1%, Rehash=0, Collisions=0/28=0%
+# Load=14/1024=1%, Rehash=0, Collisions=0/32=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
+ 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 16 / storage = 203 B / avg = 12 B
-# current buf: size = 8162 B / used = 203 B / count = 16 / avg = 12 B
+# strcache buffers: 1 (0) / strings = 18 / storage = 234 B / avg = 13 B
+# current buf: size = 8162 B / used = 234 B / count = 18 / avg = 13 B
 
-# strcache performance: lookups = 21 / hit rate = 23%
+# strcache performance: lookups = 23 / hit rate = 21%
 # hash-table stats:
-# Load=16/8192=0%, Rehash=0, Collisions=0/21=0%
-# Finished Make data base on Mon Jul  6 16:44:46 2026
+# Load=18/8192=0%, Rehash=0, Collisions=0/23=0%
+# Finished Make data base on Tue Jul  7 11:59:14 2026
 
  

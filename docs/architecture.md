@@ -35,3 +35,7 @@ tokenize        (引入tokenize,优化输入字符解析)
 build_command   (将结构体填充,传导至parse_line函数)
  |
 parse_line      (实现tokenize和build_command函数调用)
+
+dispatcher:
+dispatcher_command (实现判断指令类型)
+

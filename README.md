@@ -3,9 +3,13 @@
 ## 项目简介
  这是一个基于 Linux 的MiniShell,用来实现进程控制与命令解析。
 
-## 当前版本: V0.2.1
+## 当前版本: V0.3
 
 ## 更新日志
+- V0.3:
+- 新增dispatcher骨架,优化原有判断逻辑
+- 新增builtin内建命令解析函数,区分原有execute函数    
+
 - V0.2.1:
 - 新增tokenize,取缔原有strtok函数,优化指令解析能力
 - 新增 Token/TokenList 结构体,引入工程化模板
@@ -19,6 +23,9 @@
 
 ## 技术节点
 ```
+V0.3:
+dispatcher架构整体构建
+指令解析正式区分为builtin与executor两部分
 V0.2.1:
 tokenize模块编写
 execvp引入
@@ -48,6 +55,8 @@ fgets输入与strncmp函数解析指令
 │   ├── debug_log.md
 │   └── module.md
 ├── include
+│   ├── builtin.h
+│   ├── dispatcher.h
 │   ├── executor.h
 │   ├── log.h
 │   ├── parser.h
@@ -56,6 +65,8 @@ fgets输入与strncmp函数解析指令
 ├── Makefile
 ├── README.md
 └── src
+    ├── builtin.c
+    ├── dispatcher.c
     ├── executor.c
     ├── log.c
     ├── main.c
