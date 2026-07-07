@@ -8,4 +8,5 @@
 - dispatcher.c 实现内部外部指令类型判断
 - executor.c 控制外部指令输入下进程实现
 - builtin.c  控制内部指令输入下的进程实现
+- command.c  初始化结构体
 - main.c：程序入口
