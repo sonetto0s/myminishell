@@ -2,7 +2,7 @@
 
 ## 本文件用以记录此项目整体架构实现,整体运行逻辑
 
-## V0.4.1 架构
+## V0.4.2 架构
 ```
 主程序:
 main
@@ -32,9 +32,9 @@ built/execute        (实现内部/外部指令执行)
 ```
 
 parser层:
-tokenize        (引入tokenize,优化输入字符解析)
+tokenize        (引入tokenize,分析复杂指令符号,优化输入字符解析)
  |         
-build_command   (分析复杂指令符号,将结构体填充,传导至parse_line函数)
+build_command   (判断复杂指令符号,将结构体填充,传导至parse_line函数)
  |
 parse_line      (实现tokenize和build_command函数调用)
 

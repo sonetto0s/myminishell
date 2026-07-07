@@ -7,8 +7,17 @@
 
 #include "command.h"
 
-typedef struct {
+typedef enum{
+    TOKEN_WORD,
+    TOKEN_REDIRECT_OUT,     // >
+    TOKEN_REDIRECT_APPEND,  // >>
+    TOKEN_REDIRECT_IN       // <
+}TokenType;
+
+typedef struct
+{
     char text[TOKEN_SIZE];
+    TokenType type;
 } Token;
 
 typedef struct{
