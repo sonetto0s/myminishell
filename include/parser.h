@@ -11,7 +11,8 @@ typedef enum{
     TOKEN_WORD,
     TOKEN_REDIRECT_OUT,     // >
     TOKEN_REDIRECT_APPEND,  // >>
-    TOKEN_REDIRECT_IN       // <
+    TOKEN_REDIRECT_IN,      // <
+    TOKEN_PIPE
 }TokenType;
 
 typedef struct
@@ -25,8 +26,8 @@ typedef struct{
     int count;
 } TokenList;
 
-
-int parse_line(char *line, Command *cmd);
+Command *parse_line(char *line);
 void tokenize(char *line, TokenList *list);
-int build_command(TokenList *list, Command *cmd);
+Command *build_command(TokenList *list);
+Command *new_command();
 #endif

@@ -13,8 +13,7 @@ ShellStatus shell_init(void)
 
 ShellStatus shell_run(void)
 {
-    Command com;
-    command_init(&com);
+    Command *cmd_list = NULL;
     while (1)
     {
         printf(">>MiniShell\r\n");
@@ -23,15 +22,14 @@ ShellStatus shell_run(void)
         if (fgetsresult == NULL)
             break;
         trim_line(fgetsresult);
-        parse_line(fgetsresult,&com);
-        dispatcher_command(&com);
-        // execute_execute(&com);
-
-        // else
-        // {
-        //    printf(">>MiniShell程序关闭失败\r\n");
-        //    return SHELL_STATUS_ERROR;
-        //  }
+        cmd_list=parse_line(fgetsresult);
+        if (cmd_list != NULL)
+            dispatcher_command(cmd_list);
+        else
+        {
+           printf(">>MiniShell程序关闭失败\r\n");
+           return SHELL_STATUS_ERROR;
+        }
     }
   return SHELL_STATUS_OK;
 }
