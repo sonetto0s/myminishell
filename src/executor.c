@@ -5,16 +5,20 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
+
 int execute_command(Command *com)
 {
-    // printf("argc=%d\n", com->argc);
+    if(!com->next)
+        execute_single(com);
+    else
+        execute_pipeline(com);
+   
+    return 0;
+}
 
-    // for (int i = 0; i < com->argc; i++)
-    // {
-    //     printf("argv[%d]=%s\n", i, com->argv[i]);
-    // }
-
-    pid_t pid=fork();
+int execute_single(Command *com)
+{
+    pid_t pid = fork();
     if (pid < 0)
     {
         perror("fork");
@@ -52,10 +56,66 @@ int execute_command(Command *com)
             }
             close(fd);
         }
-        execvp(com->argv[0],com->argv);
+        execvp(com->argv[0], com->argv);
         perror("execvp");
         exit(EXIT_FAILURE);
     }
-    waitpid(pid,NULL,0);
+    waitpid(pid, NULL, 0);
+    return 0;
+}
+
+int execute_pipeline(Command *com)
+{
+    int pipefd[2];
+    if (pipe(pipefd) < 0)
+    {
+        perror("pipe");
+        return -1;
+    }
+    Command *cmd1 = com;
+    Command *cmd2 = com->next;
+    pid_t pid1 = fork();
+    
+    if (pid1 < 0)
+    {
+        perror("fork");
+        return -1;
+    }
+    else if (pid1 == 0)
+    {
+        if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+        {
+            perror("dup2");
+            return -1;
+        }
+        close(pipefd[0]);
+        close(pipefd[1]);
+        execvp(cmd1->argv[0], cmd1->argv);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+    pid_t pid2 = fork();
+    if (pid2 < 0)
+    {
+        perror("fork");
+        return -1;
+    }
+    else if (pid2 == 0)
+    {
+        if (dup2(pipefd[0], STDIN_FILENO) == -1)
+        {
+            perror("dup2");
+            return -1;
+        }
+        close(pipefd[0]);
+        close(pipefd[1]);
+        execvp(cmd2->argv[0], cmd2->argv);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+    close(pipefd[0]);
+    close(pipefd[1]);
+    waitpid(pid1, NULL, 0);
+    waitpid(pid2, NULL, 0);
     return 0;
 }

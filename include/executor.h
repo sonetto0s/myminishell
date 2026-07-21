@@ -4,5 +4,6 @@
 #include "command.h"
 
 int execute_command(Command *com);
-
+int execute_single(Command *com);
+int execute_pipeline(Command *com);
 #endif

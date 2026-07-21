@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat Jul 11 10:10:16 2026
+# Make data base, printed on Tue Jul 21 13:20:31 2026
 
 # Variables
 
@@ -121,7 +121,7 @@ LC_TIME = en_US.UTF-8
 # environment
 APPLICATION_INSIGHTS_NO_STATSBEAT = true
 # environment
-SSH_CLIENT = 192.168.84.1 49174 22
+SSH_CLIENT = 192.168.84.1 65026 22
 # environment
 LC_TELEPHONE = en_US.UTF-8
 # environment
@@ -159,7 +159,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # makefile (from '/home/matilda/桌面/Projects/myminishell/Makefile', line 3)
 CFLAGS = -Wall -g -I./include -I./common
 # environment
-VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-3aedbcb1-84e2-4ae8-9842-525cb2838472.sock
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-64bee72c-1110-44f5-b3b7-e35f15177a61.sock
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -172,8 +172,8 @@ XDG_SESSION_ID = 3
 PAPERSIZE = letter
 # default
 .RECIPEPREFIX := 
-# automatic
  
+# automatic
 <F = $(notdir $<)
 # default
 SUFFIXES := 
@@ -188,7 +188,7 @@ VSCODE_ESM_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 LC_IDENTIFICATION = en_US.UTF-8
 # environment
-SSH_CONNECTION = 192.168.84.1 49174 192.168.84.132 22
+SSH_CONNECTION = 192.168.84.1 65026 192.168.84.132 22
 # variable set hash-table stats:
 # Load=88/1024=9%, Rehash=0, Collisions=6/123=5%
 
@@ -313,6 +313,6 @@ build/src/shell.o:
 # strcache performance: lookups = 24 / hit rate = 20%
 # hash-table stats:
 # Load=19/8192=0%, Rehash=0, Collisions=0/24=0%
-# Finished Make data base on Sat Jul 11 10:10:16 2026
+# Finished Make data base on Tue Jul 21 13:20:31 2026
 
  

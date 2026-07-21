@@ -2,7 +2,6 @@ make -f /home/matilda/桌面/Projects/myminishell/Makefile --dry-run --always-ma
 make: Entering directory '/home/matilda/桌面/Projects/myminishell'
 mkdir -p build/src/
 gcc -Wall -g -I./include -I./common -c src/main.c -o build/src/main.o
- 
 mkdir -p build/src/
 gcc -Wall -g -I./include -I./common -c src/shell.c -o build/src/shell.o
 mkdir -p build/common/
@@ -15,7 +14,6 @@ mkdir -p build/src/
 gcc -Wall -g -I./include -I./common -c src/executor.c -o build/src/executor.o
 mkdir -p build/src/
 gcc -Wall -g -I./include -I./common -c src/dispatcher.c -o build/src/dispatcher.o
- 
 mkdir -p build/src/
 gcc -Wall -g -I./include -I./common -c src/builtin.c -o build/src/builtin.o
 mkdir -p build/src/
