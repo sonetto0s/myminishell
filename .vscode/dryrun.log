@@ -1,0 +1,23 @@
+make -f /home/matilda/桌面/Projects/myminishell/Makefile --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/matilda/桌面/Projects/myminishell'
+mkdir -p build/src/
+gcc -Wall -g -I./include -I./common -c src/main.c -o build/src/main.o
+mkdir -p build/src/
+gcc -Wall -g -I./include -I./common -c src/shell.c -o build/src/shell.o
+mkdir -p build/common/
+gcc -Wall -g -I./include -I./common -c common/utils.c -o build/common/utils.o
+mkdir -p build/common/
+gcc -Wall -g -I./include -I./common -c common/log.c -o build/common/log.o
+mkdir -p build/src/
+gcc -Wall -g -I./include -I./common -c src/parser.c -o build/src/parser.o
+mkdir -p build/src/
+gcc -Wall -g -I./include -I./common -c src/executor.c -o build/src/executor.o
+mkdir -p build/src/
+gcc -Wall -g -I./include -I./common -c src/dispatcher.c -o build/src/dispatcher.o
+mkdir -p build/src/
+gcc -Wall -g -I./include -I./common -c src/builtin.c -o build/src/builtin.o
+mkdir -p build/src/
+gcc -Wall -g -I./include -I./common -c src/command.c -o build/src/command.o
+gcc  build/src/main.o  build/src/shell.o  build/common/utils.o  build/common/log.o  build/src/parser.o  build/src/executor.o  build/src/dispatcher.o  build/src/builtin.o  build/src/command.o -o shell
+make: Leaving directory '/home/matilda/桌面/Projects/myminishell'
+ 
