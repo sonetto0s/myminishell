@@ -79,61 +79,141 @@ int execute_single(Command *com)
 
 int execute_pipeline(Command *com)
 {
-
-    int pipefd[2];
-    if (pipe(pipefd) < 0)
+    
+   
+    // Command *cmd1 = com;
+    // Command *cmd2 = com->next;
+    Command *current = com;
+    int pipe_fd = -1;
+    int count = 0;
+    pid_t pids[64];
+    while (current)
     {
-        perror("pipe");
-        return -1;
-    }
-    Command *cmd1 = com;
-    Command *cmd2 = com->next;
-
-    pid_t pid1 = fork();
-
-    if (pid1 < 0)
-    {
-        perror("fork");
-        return -1;
-    }
-    else if (pid1 == 0)
-    {
-      
-        if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+        int pipefd[2];
+        if (current->next)
         {
-            perror("dup2");
-            exit(EXIT_FAILURE);
-        }
-        close(pipefd[0]);
-        close(pipefd[1]);
-
-        setredirect(cmd1);
-
-        run_process(cmd1);
-    }
-    pid_t pid2 = fork();
-
-    if (pid2 < 0)
-    {
-        perror("fork");
-        return -1;
-    }
-    else if (pid2 == 0)
-    {
-        if (dup2(pipefd[0], STDIN_FILENO) == -1)
-        {
-            perror("dup2");
-            exit(EXIT_FAILURE);
+            if (pipe(pipefd) < 0)
+            {
+                perror("pipe");
+                return -1;
+            }
         }
 
-        close(pipefd[0]);
-        close(pipefd[1]);
-        setredirect(cmd2);
-        run_process(cmd2);
+        pid_t pid = fork();
+        if (pid < 0)
+        {
+            perror("fork");
+            return -1;
+        }
+        if (pid > 0)
+        {
+            pids[count++] = pid;
+        }
+
+        if (pid == 0)
+        {
+            if (pipe_fd == -1 &&current->next != NULL)
+            {
+                if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+                {
+                    perror("dup2");
+                    exit(EXIT_FAILURE);
+                }
+                close(pipefd[1]);
+                close(pipefd[0]);
+                
+            }
+            else if (pipe_fd != -1 &&current->next != NULL)
+            {
+                if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+                {
+                    perror("dup2 stdout");
+                    exit(EXIT_FAILURE);
+                }
+
+                if (dup2(pipe_fd, STDIN_FILENO) == -1)
+                {
+                    perror("dup2 stdin");
+                    exit(EXIT_FAILURE);
+                }
+                close(pipefd[0]);
+                close(pipefd[1]);
+               
+            }
+            else if (current->next == NULL)
+            {
+                if (pipe_fd != -1)
+                {
+                    if (dup2(pipe_fd, STDIN_FILENO) == -1)
+                    {
+                        perror("dup2");
+                        exit(EXIT_FAILURE);
+                    }
+                    close(pipe_fd);
+                }
+               
+            }
+            setredirect(current);
+            run_process(current);
+        }
+        else
+        {
+            if (current->next)
+            {
+                if (pipe_fd != -1)
+                {
+                    close(pipe_fd);
+                }
+                pipe_fd = pipefd[0];
+                close(pipefd[1]);
+            }
+            current = current->next;
+        }
     }
-    close(pipefd[0]);
-    close(pipefd[1]);
-    waitpid(pid1, NULL, 0);
-    waitpid(pid2, NULL, 0);
+    if (pipe_fd != -1)
+    {
+        close(pipe_fd);
+    }
+    for (int i = 0; i < count; i++)
+    {
+        waitpid(pids[i], NULL, 0);
+    }
+
+        // if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+        // {
+        //     perror("dup2");
+        //     exit(EXIT_FAILURE);
+        // }
+        // close(pipefd[0]);
+        // close(pipefd[1]);
+
+        // setredirect(cmd1);
+
+        // run_process(cmd1);
+    
+    // pid_t pid2 = fork();
+
+    // if (pid2 < 0)
+    // {
+    //     perror("fork");
+    //     return -1;
+    // }
+    // else if (pid2 == 0)
+    // {
+    //     if (dup2(pipefd[0], STDIN_FILENO) == -1)
+    //     {
+    //         perror("dup2");
+    //         exit(EXIT_FAILURE);
+    //     }
+
+    //     close(pipefd[0]);
+    //     close(pipefd[1]);
+    //     setredirect(cmd2);
+    //     run_process(cmd2);
+    // }
+    // close(pipefd[0]);
+    // close(pipefd[1]);
+    // waitpid(pid1, NULL, 0);
+    // waitpid(pid2, NULL, 0);
     return 0;
 }

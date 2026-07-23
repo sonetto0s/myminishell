@@ -3,9 +3,13 @@
 ## 项目简介
  这是一个基于 Linux 的MiniShell,用来实现进程控制与命令解析。
 
-## 当前版本: V0.5.2
+## 当前版本: V0.5.3
 
 ## 更新日志
+
+V0.5.3:
+- 优化原有命令管道解析,升级为可识别多重管道
+- 优化executor文件逻辑实现
 
 V0.5.2:
 - 剥离redirect，优化代码逻辑
@@ -92,14 +96,14 @@ V0.5:
 ├── Makefile
 ├── README.md
 ├── shell
-├── src
-│   ├── builtin.c
-│   ├── command.c
-│   ├── dispatcher.c
-│   ├── executor.c
-│   ├── main.c
-│   ├── parser.c
-│   └── shell.c
+└── src
+    ├── builtin.c
+    ├── command.c
+    ├── dispatcher.c
+    ├── executor.c
+    ├── main.c
+    ├── parser.c
+    └── shell.c
 
 
 ```

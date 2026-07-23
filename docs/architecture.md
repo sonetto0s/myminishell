@@ -2,7 +2,7 @@
 
 ## 本文件用以记录此项目整体架构实现,整体运行逻辑
 
-## V0.5.1 架构
+## V0.5.3 架构
 ```
 主程序:
 main
@@ -45,3 +45,11 @@ dispatcher_command   (实现返回判断指令类型)
 builtin/executor     (解析判断内部/外部指令并执行)
 
 
+executor 层:
+execute_command                     (判断命令参数类型)
+ |
+execute_single/execute_pipeline     (实现有无管道命令执行)
+ |
+setredirect                         (实现重定向)
+ |
+run_process                         (实现进程转换)
