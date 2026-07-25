@@ -2,6 +2,10 @@
 #include "sig.h"
 #include <signal.h>
 #include <stdio.h>
+#include <sys/wait.h>
+
+static void sigchld_handler(int sig);
+
 void signal_init(void)
 {
     struct sigaction sasa={0};
@@ -9,6 +13,12 @@ void signal_init(void)
     sigemptyset(&sasa.sa_mask);
     sasa.sa_flags = 0;
     if (sigaction(SIGINT, &sasa, NULL) < 0)
+        perror("sigaction");
+    struct sigaction sa = {0};
+    sa.sa_handler = sigchld_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGCHLD, &sa, NULL) < 0)
         perror("sigaction");
 }
 
@@ -20,4 +30,13 @@ void signal_reset_child(void)
     sasagei.sa_flags = 0;
     if (sigaction(SIGINT, &sasagei, NULL) < 0)
         perror("sigaction");
+}
+
+static void sigchld_handler(int sig)
+{
+    (void) sig;
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+    {
+
+    }    
 }

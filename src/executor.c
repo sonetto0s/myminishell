@@ -19,13 +19,6 @@ int execute_command(Command *com)
     return 0;
 }
 
-static void run_process(Command *com)
-{
-    signal_reset_child();
-    execvp(com->argv[0], com->argv);
-    perror("execvp");
-    exit(EXIT_FAILURE);
-}
 
 int setredirect(Command *com)
 {
@@ -82,9 +75,6 @@ int execute_single(Command *com)
 int execute_pipeline(Command *com)
 {
     
-   
-    // Command *cmd1 = com;
-    // Command *cmd2 = com->next;
     Command *current = com;
     int pipe_fd = -1;
     int count = 0;
@@ -181,41 +171,14 @@ int execute_pipeline(Command *com)
         waitpid(pids[i], NULL, 0);
     }
 
-        // if (dup2(pipefd[1], STDOUT_FILENO) == -1)
-        // {
-        //     perror("dup2");
-        //     exit(EXIT_FAILURE);
-        // }
-        // close(pipefd[0]);
-        // close(pipefd[1]);
-
-        // setredirect(cmd1);
-
-        // run_process(cmd1);
-    
-    // pid_t pid2 = fork();
-
-    // if (pid2 < 0)
-    // {
-    //     perror("fork");
-    //     return -1;
-    // }
-    // else if (pid2 == 0)
-    // {
-    //     if (dup2(pipefd[0], STDIN_FILENO) == -1)
-    //     {
-    //         perror("dup2");
-    //         exit(EXIT_FAILURE);
-    //     }
-
-    //     close(pipefd[0]);
-    //     close(pipefd[1]);
-    //     setredirect(cmd2);
-    //     run_process(cmd2);
-    // }
-    // close(pipefd[0]);
-    // close(pipefd[1]);
-    // waitpid(pid1, NULL, 0);
-    // waitpid(pid2, NULL, 0);
+        
     return 0;
+}
+
+static void run_process(Command *com)
+{
+    signal_reset_child();
+    execvp(com->argv[0], com->argv);
+    perror("execvp");
+    exit(EXIT_FAILURE);
 }
