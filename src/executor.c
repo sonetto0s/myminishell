@@ -1,4 +1,5 @@
 #include "executor.h"
+#include "sig.h"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -20,6 +21,7 @@ int execute_command(Command *com)
 
 static void run_process(Command *com)
 {
+    signal_reset_child();
     execvp(com->argv[0], com->argv);
     perror("execvp");
     exit(EXIT_FAILURE);

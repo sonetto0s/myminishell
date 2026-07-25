@@ -1,6 +1,5 @@
 #include "utils.h"
 
-
 void trim_line(char *buff)
 {
     int len = strlen(buff);
