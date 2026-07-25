@@ -7,6 +7,8 @@ Command *parse_line(char *line)
 {
     TokenList list;
     tokenize(line,&list);
+    if (list.count == 0)
+        return NULL;
     return build_command(&list);
 }
  
@@ -91,21 +93,22 @@ Command *build_command(TokenList *list)
             case TOKEN_REDIRECT_IN:
                 if (i + 1 >= list->count)
                     return NULL;
-                current->redirect.input_file = list->token[i + 1].text;
+                current->redirect.input_file = strdup(list->token[i + 1].text);
                 i++;
                 break;
             case TOKEN_REDIRECT_OUT:
                 if (i + 1 >= list->count)
                     return NULL;
-                current->redirect.output_file = list->token[i + 1].text;
+                current->redirect.output_file = strdup(list->token[i + 1].text);
                 current->redirect.append = 0;
                 i++;
                 break;
             case TOKEN_REDIRECT_APPEND:
                 if (i + 1 >= list->count)
                     return NULL;
-                current->redirect.output_file = list->token[i + 1].text;
+                current->redirect.output_file = strdup(list->token[i + 1].text);
                 current->redirect.append = 1;
+                i++;
                 break;
             case TOKEN_PIPE:
                 if (i + 1 >= list->count)

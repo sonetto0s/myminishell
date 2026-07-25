@@ -3,9 +3,13 @@
 ## 项目简介
  这是一个基于 Linux 的MiniShell,用来实现进程控制与命令解析。
 
-## 当前版本: V0.5.3
+## 当前版本: V0.6
 
 ## 更新日志
+
+V0.6:
+- 引入signal机制
+- 实现 Ctrl + C 指令功能
 
 V0.5.3:
 - 优化原有命令管道解析,升级为可识别多重管道
@@ -76,7 +80,8 @@ V0.5:
 │       ├── executor.o
 │       ├── main.o
 │       ├── parser.o
-│       └── shell.o
+│       ├── shell.o
+│       └── sig.o
 ├── common
 │   ├── log.c
 │   ├── log.h
@@ -92,7 +97,8 @@ V0.5:
 │   ├── dispatcher.h
 │   ├── executor.h
 │   ├── parser.h
-│   └── shell.h
+│   ├── shell.h
+│   └── sig.h
 ├── Makefile
 ├── README.md
 ├── shell
@@ -103,7 +109,7 @@ V0.5:
     ├── executor.c
     ├── main.c
     ├── parser.c
-    └── shell.c
-
+    ├── shell.c
+    └── sig.c
 
 ```

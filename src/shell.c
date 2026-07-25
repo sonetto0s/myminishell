@@ -5,17 +5,20 @@
 #include "dispatcher.h"
 #include "executor.h"
 #include "command.h"
+#include "sig.h"
 ShellStatus shell_init(void)
 {
+    signal_init();
     printf(">>shell初始化成功\r\n");
     return SHELL_STATUS_OK;
 }
 
 ShellStatus shell_run(void)
 {
-    Command *cmd_list = NULL;
+    
     while (1)
     {
+        Command *cmd_list = NULL;
         printf(">>MiniShell\r\n");
         char buff[100];
         char *fgetsresult = fgets(buff, sizeof(buff), stdin);
@@ -30,8 +33,7 @@ ShellStatus shell_run(void)
             
         else
         {
-           printf(">>MiniShell程序关闭失败\r\n");
-           return SHELL_STATUS_ERROR;
+           continue;
         }
     }
   return SHELL_STATUS_OK;

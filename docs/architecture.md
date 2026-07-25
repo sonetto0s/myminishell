@@ -2,7 +2,7 @@
 
 ## 本文件用以记录此项目整体架构实现,整体运行逻辑
 
-## V0.5.3 架构
+## V0.6 架构
 ```
 主程序:
 main
@@ -53,3 +53,6 @@ execute_single/execute_pipeline     (实现有无管道命令执行)
 setredirect                         (实现重定向)
  |
 run_process                         (实现进程转换)
+
+signal 层:
+signal_init                         (实现信号数据初始化)

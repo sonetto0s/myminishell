@@ -51,6 +51,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 shell
-.vscode
+.vscode/
 # debug information files
 *.dwo

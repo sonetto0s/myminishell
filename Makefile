@@ -10,7 +10,8 @@ SRC = src/main.c   \
       src/executor.c    \
       src/dispatcher.c   \
       src/builtin.c	      \
-	  src/command.c	       
+	  src/command.c	       \
+	  src/sig.c            	
 
 OBJ = $(patsubst %.c, build/%.o, $(SRC))
 
