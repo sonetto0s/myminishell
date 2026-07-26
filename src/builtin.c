@@ -21,7 +21,7 @@ BuiltinEntry *builtin_lookup(const char *name)
  
 }
 
-int builtin_cd(Command * cmd)
+int builtin_cd(Command *cmd, ShellContextStatus *ctx)
 {
     if (cmd->argc <2)
      {
@@ -37,7 +37,7 @@ int builtin_cd(Command * cmd)
     
     return 0;
 }
-int builtin_pwd(Command *cmd)
+int builtin_pwd(Command *cmd, ShellContextStatus *ctx)
 {
     char buff[100];
     if (getcwd(buff, sizeof(buff)) != NULL)
@@ -52,7 +52,7 @@ int builtin_pwd(Command *cmd)
     }
 }
 
-int builtin_exit(Command *cmd)
+int builtin_exit(Command *cmd, ShellContextStatus *ctx)
 {
     exit(0);
     return 0;

@@ -6,6 +6,8 @@
 #include "executor.h"
 #include "command.h"
 #include "sig.h"
+
+
 ShellStatus shell_init(void)
 {
     signal_init();
@@ -15,7 +17,8 @@ ShellStatus shell_init(void)
 
 ShellStatus shell_run(void)
 {
-    
+    ShellContextStatus ctx;
+    shell_context_init(&ctx);
     while (1)
     {
         Command *cmd_list = NULL;
@@ -28,9 +31,10 @@ ShellStatus shell_run(void)
         cmd_list=parse_line(fgetsresult);
         if (cmd_list != NULL)
         {
-            dispatcher_command(cmd_list);
+            int status = dispatcher_command(cmd_list,&ctx);
+            ctx.last_exit_status = status;
         }
-            
+
         else
         {
            continue;

@@ -2,6 +2,6 @@
 #define _DISPATCHER_H
 
 #include "command.h"
-
-int dispatcher_command(Command *cmd);
+#include "shell_context.h"
+int dispatcher_command(Command *cmd,ShellContextStatus *ctx);
 #endif

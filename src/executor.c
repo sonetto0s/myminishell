@@ -12,11 +12,9 @@ static void run_process(Command *com);
 int execute_command(Command *com)
 {
     if(!com->next)
-        execute_single(com);
+        return execute_single(com);
     else
-        execute_pipeline(com);
-   
-    return 0;
+        return execute_pipeline(com);
 }
 
 
@@ -57,6 +55,7 @@ int setredirect(Command *com)
 
 int execute_single(Command *com)
 {
+    int status;
     pid_t pid = fork();
     if (pid < 0)
     {
@@ -68,8 +67,12 @@ int execute_single(Command *com)
         setredirect(com);
         run_process(com);
     }
-    waitpid(pid, NULL, 0);
-    return 0;
+    waitpid(pid, &status, 0);
+    if (WIFEXITED(status))
+    {
+        return WEXITSTATUS(status);
+    }
+    return -1;
 }
 
 int execute_pipeline(Command *com)

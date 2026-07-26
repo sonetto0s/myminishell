@@ -3,9 +3,13 @@
 ## 项目简介
  这是一个基于 Linux 的MiniShell,用来实现进程控制与命令解析。
 
-## 当前版本: V0.6.2
+## 当前版本: V0.7
 
 ## 更新日志
+
+V0.7:
+- 优化execute进程处理逻辑,实现返回退出码
+- 新增shell_context文件,处理shellstatus值
 
 V0.6.2:
 - 优化signal机制,引入SIGCHLD
@@ -105,6 +109,7 @@ V0.5:
 │   ├── dispatcher.h
 │   ├── executor.h
 │   ├── parser.h
+│   ├── shell_context.h
 │   ├── shell.h
 │   └── sig.h
 ├── Makefile
@@ -118,6 +123,7 @@ V0.5:
     ├── main.c
     ├── parser.c
     ├── shell.c
+    ├── shell_context.c
     └── sig.c
 
 ```
