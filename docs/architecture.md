@@ -2,7 +2,7 @@
 
 ## 本文件用以记录此项目整体架构实现,整体运行逻辑
 
-## V0.7 架构
+## V0.7.1 架构
 ```
 主程序:
 main
@@ -56,4 +56,7 @@ run_process                         (实现进程转换)
 
 signal 层:
 signal_init/signal_reset_child      (实现信号数据初始化+忽略/不忽略Ctrl+C)
+
+shell_context 层:
+shell_status_init                   (初始化shell状态结构体)
         

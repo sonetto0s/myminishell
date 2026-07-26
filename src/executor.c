@@ -20,22 +20,33 @@ int execute_command(Command *com)
 
 int setredirect(Command *com)
 {
-    if (com->redirect.output_file != NULL)
+    if (com->redirect.output_file)
     {
-        int fd = open(com->redirect.output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (fd < 0)
+        int flags;
+        if(com->redirect.append)
         {
-            perror("open");
-            exit(EXIT_FAILURE);
+            flags = O_WRONLY | O_CREAT | O_APPEND;
         }
+        else
+       {
+          flags = O_WRONLY | O_CREAT | O_TRUNC;
+       }
+          int fd = open(com->redirect.output_file, flags, 0644);
+          if (fd < 0)
+          {
+              perror("open");
+              exit(EXIT_FAILURE);
+          }
         if (dup2(fd, STDOUT_FILENO) == -1)
         {
             perror("dup2");
             exit(EXIT_FAILURE);
         }
         close(fd);
+      
     }
-    if (com->redirect.input_file != NULL)
+
+    if (com->redirect.input_file)
     {
         int fd = open(com->redirect.input_file, O_RDONLY, 0644);
         if (fd < 0)
