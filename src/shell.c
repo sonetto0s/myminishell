@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "parser.h"
 #include <stdio.h>
+#include <errno.h>
 #include "dispatcher.h"
 #include "executor.h"
 #include "command.h"
@@ -26,7 +27,19 @@ ShellStatus shell_run(void)
         char buff[100];
         char *fgetsresult = fgets(buff, sizeof(buff), stdin);
         if (fgetsresult == NULL)
+        {
+            if (feof(stdin))
+            {
+                break;
+            }
+            if (errno == EINTR)
+            {
+                clearerr(stdin);
+                continue;
+            }
             break;
+        }
+
         trim_line(fgetsresult);
         cmd_list=parse_line(fgetsresult,&ctx);
         if (cmd_list != NULL)
@@ -38,6 +51,7 @@ ShellStatus shell_run(void)
         {
            continue;
         }
+        command_free(cmd_list);
     }
   return SHELL_STATUS_OK;
 }

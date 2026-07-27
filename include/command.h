@@ -19,5 +19,6 @@ typedef struct Command
 } Command;
 
 void command_init(Command *cmd);
+void command_free(Command *cmd);
 
 #endif

@@ -1,6 +1,8 @@
 #include "command.h"
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 void command_init(Command *cmd)
 {
     if (cmd == NULL)
@@ -17,3 +19,18 @@ void command_init(Command *cmd)
     cmd->next = NULL;
 }
 
+void command_free(Command *cmd)
+{
+    while(cmd)
+    {
+        Command *next = cmd->next;
+        for (int i = 0; i < cmd->argc; i++)
+        {
+            free(cmd->argv[i]);
+        }
+        free(cmd->redirect.output_file);
+        free(cmd->redirect.input_file);
+        free(cmd);
+        cmd = next;
+    }
+}
