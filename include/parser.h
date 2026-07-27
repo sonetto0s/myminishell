@@ -6,6 +6,7 @@
 #define TOKEN_SIZE 64
 
 #include "command.h"
+#include "shell_context.h"
 
 typedef enum{
     TOKEN_WORD,
@@ -26,8 +27,8 @@ typedef struct{
     int count;
 } TokenList;
 
-Command *parse_line(char *line);
+Command *parse_line(char *line, ShellContextStatus *ctx);
 void tokenize(char *line, TokenList *list);
-Command *build_command(TokenList *list);
+Command *build_command(TokenList *list, ShellContextStatus *ctx);
 Command *new_command();
 #endif

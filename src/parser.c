@@ -3,13 +3,13 @@
 #include <stdio.h>
 #include <string.h>
 
-Command *parse_line(char *line)
+Command *parse_line(char *line,ShellContextStatus *ctx)
 {
     TokenList list;
     tokenize(line,&list);
     if (list.count == 0)
         return NULL;
-    return build_command(&list);
+    return build_command(&list,ctx);
 }
  
 void tokenize(char *line,TokenList *list)
@@ -72,7 +72,7 @@ void tokenize(char *line,TokenList *list)
     }
 }
 
-Command *build_command(TokenList *list)
+Command *build_command(TokenList *list,ShellContextStatus *ctx)
 {
     Command *head = NULL;
     Command *current = NULL;
@@ -85,7 +85,17 @@ Command *build_command(TokenList *list)
             case TOKEN_WORD:
                 if (current->argc >= MAX_ARGS)
                     return NULL;
-                current->argv[current->argc] = strdup(list->token[i].text);
+
+                if (strcmp(list->token[i].text, "$?") == 0)
+                {
+                    char buffer[64];
+                    snprintf(buffer, sizeof(buffer), "%d", ctx->last_exit_status);
+                    current->argv[current->argc] = strdup(buffer);
+                }
+                else
+                {
+                    current->argv[current->argc] = strdup(list->token[i].text);
+                }
                 if (current->argv[current->argc] == NULL)
                     return NULL;
                 current->argc++;

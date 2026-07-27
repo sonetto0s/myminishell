@@ -93,6 +93,8 @@ int execute_pipeline(Command *com)
     int pipe_fd = -1;
     int count = 0;
     pid_t pids[64];
+    int statuses = 0;
+    int last_status = 0;
     while (current)
     {
         int pipefd[2];
@@ -182,11 +184,15 @@ int execute_pipeline(Command *com)
     }
     for (int i = 0; i < count; i++)
     {
-        waitpid(pids[i], NULL, 0);
+        waitpid(pids[i], &statuses, 0);
+        if (i == count - 1)
+            last_status = statuses;
     }
-
-        
-    return 0;
+    if (WIFEXITED(last_status))
+    {
+        return WEXITSTATUS(last_status);
+    }
+    return -1;
 }
 
 static void run_process(Command *com)
@@ -194,5 +200,5 @@ static void run_process(Command *com)
     signal_reset_child();
     execvp(com->argv[0], com->argv);
     perror("execvp");
-    exit(EXIT_FAILURE);
+    exit(127);
 }

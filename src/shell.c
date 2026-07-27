@@ -28,13 +28,12 @@ ShellStatus shell_run(void)
         if (fgetsresult == NULL)
             break;
         trim_line(fgetsresult);
-        cmd_list=parse_line(fgetsresult);
+        cmd_list=parse_line(fgetsresult,&ctx);
         if (cmd_list != NULL)
         {
             int status = dispatcher_command(cmd_list,&ctx);
             ctx.last_exit_status = status;
         }
-
         else
         {
            continue;
