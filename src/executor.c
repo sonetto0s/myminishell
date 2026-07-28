@@ -78,7 +78,14 @@ int execute_single(Command *com)
         setredirect(com);
         run_process(com);
     }
+    if (com->background)
+    {
+        printf("[background] pid: %d\n",pid);
+        return 0;
+    }
+    
     waitpid(pid, &status, 0);
+
     if (WIFEXITED(status))
     {
         return WEXITSTATUS(status);

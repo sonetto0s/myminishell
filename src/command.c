@@ -16,6 +16,7 @@ void command_init(Command *cmd)
     cmd->redirect.output_file = NULL;
     cmd->redirect.input_file = NULL;
     cmd->redirect.append = 0;
+    cmd->background = 0;
     cmd->next = NULL;
 }
 

@@ -14,6 +14,7 @@ typedef struct Command
 {
     int argc;
     char *argv[MAX_ARGS];
+    int background;
     Redirection redirect;
     struct Command *next;
 } Command;

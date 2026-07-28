@@ -58,7 +58,14 @@ void tokenize(char *line,TokenList *list)
             p++;
             continue;
         }
-
+        if (*p == '&')
+        {
+            list->token[list->count].type = TOKEN_BACKGROUND;
+            strcpy(list->token[list->count].text, "&");
+            list->count++;
+            p++;
+            continue;
+        }
         list->token[list->count].type = TOKEN_WORD;
         
         int i = 0;
@@ -119,6 +126,9 @@ Command *build_command(TokenList *list,ShellContextStatus *ctx)
                 current->redirect.output_file = strdup(list->token[i + 1].text);
                 current->redirect.append = 1;
                 i++;
+                break;
+            case TOKEN_BACKGROUND:
+                current->background = 1;
                 break;
             case TOKEN_PIPE:
                 if (i + 1 >= list->count)

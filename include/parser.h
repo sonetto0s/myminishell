@@ -13,7 +13,8 @@ typedef enum{
     TOKEN_REDIRECT_OUT,     // >
     TOKEN_REDIRECT_APPEND,  // >>
     TOKEN_REDIRECT_IN,      // <
-    TOKEN_PIPE
+    TOKEN_PIPE,
+    TOKEN_BACKGROUND
 }TokenType;
 
 typedef struct
