@@ -79,7 +79,7 @@ int execute_single(Command *com, ShellContextStatus *ctx)
     }
     if (com->background)
     {
-        job_add(&ctx->job, pid, com->argv[0], ctx->job_next_id++);
+        job_add(&ctx->jobs, pid, com->argv[0], ctx->job_next_id++);
         return 0;
     }
     

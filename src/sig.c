@@ -3,24 +3,29 @@
 #include <signal.h>
 #include <stdio.h>
 #include <sys/wait.h>
+#include "job.h"
+
 
 static void sigchld_handler(int sig);
 static void sigint_handler(int sig);
 
-void signal_init(void)
+static ShellContextStatus *shellctx = NULL;
+
+void signal_init(ShellContextStatus *ctx)
 {
-    struct sigaction sasa={0};
+    shellctx = ctx;
+    struct sigaction sasa = {0};
     sasa.sa_handler = sigint_handler;
     sigemptyset(&sasa.sa_mask);
     sasa.sa_flags = 0;
     if (sigaction(SIGINT, &sasa, NULL) < 0)
         perror("sigaction");
-    // struct sigaction sa = {0};
-    // sa.sa_handler = sigchld_handler;
-    // sigemptyset(&sa.sa_mask);
-    // sa.sa_flags = 0;
-    // if (sigaction(SIGCHLD, &sa, NULL) < 0)
-    //     perror("sigaction");
+    struct sigaction sa = {0};
+    sa.sa_handler = sigchld_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGCHLD, &sa, NULL) < 0)
+        perror("sigaction");
 }
 
 void signal_reset_child(void)
@@ -36,10 +41,13 @@ void signal_reset_child(void)
 static void sigchld_handler(int sig)
 {
     (void)sig;
-    while (waitpid(-1, NULL, WNOHANG) > 0)
+    int status = 0;
+    pid_t pid;
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
-
-    }    
+        if (shellctx)
+            job_remove(&shellctx->jobs, pid);
+    }
 }
 
 static void sigint_handler(int sig)

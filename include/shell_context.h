@@ -5,7 +5,7 @@
 
 typedef struct 
 {
-    Job *job;
+    Job *jobs;
     int job_next_id;
     int last_exit_status;
 } ShellContextStatus;

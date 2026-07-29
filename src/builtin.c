@@ -8,6 +8,7 @@ static BuiltinEntry builtin_table[] = {
     {"cd", builtin_cd},
     {"pwd", builtin_pwd},
     {"exit", builtin_exit},
+    {"jobs",builtin_job},
 };
 
 BuiltinEntry *builtin_lookup(const char *name)
@@ -55,5 +56,11 @@ int builtin_pwd(Command *cmd, ShellContextStatus *ctx)
 int builtin_exit(Command *cmd, ShellContextStatus *ctx)
 {
     exit(0);
+    return 0;
+}
+
+int builtin_job(Command *cmd, ShellContextStatus *ctx)
+{
+    job_list(ctx->jobs);
     return 0;
 }

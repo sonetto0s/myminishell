@@ -28,3 +28,53 @@ void job_add(Job **head,pid_t pid,char *command,int id)
     new_job->next = *head;
     *head = new_job;
 }
+
+void job_list(Job *head)
+{
+    Job *current = head;
+    while(current)
+    {
+        printf("[%d] \n", current->id);
+        printf("%s\n", current->command);
+        if (current->Status == JOB_RUNNING)
+            printf("now it is running\n");
+        else
+            printf("now it is done\n");
+
+        current = current->next;
+    }
+}
+
+Job *job_find(Job *head, pid_t pids)
+{
+    Job *current = head;
+    while (current)
+    {
+        if (current->pid == pids)
+            return current;
+
+        current = current->next;
+    }
+    return NULL;
+}
+
+void job_remove(Job **head,pid_t pids)
+{
+    Job *current = *head;
+    Job *prev = NULL;
+    while (current)
+    {
+        if (current->pid == pids)
+        {
+            if (prev == NULL)
+                *head = current->next;
+            else
+                prev->next = current->next;
+
+            free(current);
+            return;
+        }
+        prev = current;
+        current = current->next;
+    }
+}

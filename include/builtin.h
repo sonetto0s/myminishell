@@ -13,4 +13,5 @@ BuiltinEntry *builtin_lookup(const char *name);
 int builtin_cd(Command *cmd, ShellContextStatus *ctx);
 int builtin_pwd(Command *cmd, ShellContextStatus *ctx);
 int builtin_exit(Command *cmd, ShellContextStatus *ctx);
+int builtin_job(Command *cmd, ShellContextStatus *ctx);
 #endif

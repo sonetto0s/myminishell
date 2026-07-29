@@ -19,5 +19,8 @@ typedef struct Job{
 
 void job_init(Job *job);
 void job_add(Job **head, pid_t pid, char *command, int id);
+void job_list(Job *head);
+Job *job_find(Job *head, pid_t pid);
+void job_remove(Job **head, pid_t pids);
 
 #endif

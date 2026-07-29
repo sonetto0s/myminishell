@@ -8,18 +8,18 @@
 #include "command.h"
 #include "sig.h"
 
+static ShellContextStatus ctx;
 
 ShellStatus shell_init(void)
 {
-    signal_init();
+    shell_context_init(&ctx);
+    signal_init(&ctx);
     printf(">>shell初始化成功\r\n");
     return SHELL_STATUS_OK;
 }
 
 ShellStatus shell_run(void)
 {
-    ShellContextStatus ctx;
-    shell_context_init(&ctx);
     while (1)
     {
         Command *cmd_list = NULL;
