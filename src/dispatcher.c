@@ -11,5 +11,5 @@ int dispatcher_command(Command *cmd, ShellContextStatus *ctx)
         return entry->handler(cmd,ctx);
     }
     
-    return execute_command(cmd);
+    return execute_command(cmd,ctx);
 }

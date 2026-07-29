@@ -12,7 +12,8 @@ SRC = src/main.c   \
       src/builtin.c	      \
 	  src/command.c	       \
 	  src/sig.c            	\
-	  src/shell_context.c
+	  src/shell_context.c	 \
+	  src/job.c
 
 OBJ = $(patsubst %.c, build/%.o, $(SRC))
 

@@ -1,8 +1,12 @@
 #ifndef SHELL_CONTEXT_H
 #define SHELL_CONTEXT_H
 
+#include "job.h"
+
 typedef struct 
 {
+    Job *job;
+    int job_next_id;
     int last_exit_status;
 } ShellContextStatus;
 

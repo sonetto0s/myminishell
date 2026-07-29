@@ -9,14 +9,13 @@
 
 static void run_process(Command *com);
 
-int execute_command(Command *com)
+int execute_command(Command *com, ShellContextStatus *ctx)
 {
     if(!com->next)
-        return execute_single(com);
+        return execute_single(com,ctx);
     else
         return execute_pipeline(com);
 }
-
 
 int setredirect(Command *com)
 {
@@ -64,7 +63,7 @@ int setredirect(Command *com)
     return 0;
 }
 
-int execute_single(Command *com)
+int execute_single(Command *com, ShellContextStatus *ctx)
 {
     int status;
     pid_t pid = fork();
@@ -80,7 +79,7 @@ int execute_single(Command *com)
     }
     if (com->background)
     {
-        printf("[background] pid: %d\n",pid);
+        job_add(&ctx->job, pid, com->argv[0], ctx->job_next_id++);
         return 0;
     }
     
