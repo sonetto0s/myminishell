@@ -28,8 +28,8 @@ typedef struct{
     int count;
 } TokenList;
 
-Command *parse_line(char *line, ShellContextStatus *ctx);
+Command *parse_line(char *line, ShellContext *ctx);
 void tokenize(char *line, TokenList *list);
-Command *build_command(TokenList *list, ShellContextStatus *ctx);
+Command *build_command(TokenList *list, ShellContext *ctx);
 Command *new_command();
 #endif

@@ -3,7 +3,7 @@
 
 #include "shell_context.h"
 
-void signal_init(ShellContextStatus *ctx);
+void signal_init(ShellContext *ctx);
 void signal_reset_child(void);
 
 #endif

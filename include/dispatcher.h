@@ -3,5 +3,5 @@
 
 #include "command.h"
 #include "shell_context.h"
-int dispatcher_command(Command *cmd,ShellContextStatus *ctx);
+int dispatcher_command(Command *cmd,ShellContext *ctx);
 #endif

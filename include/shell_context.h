@@ -5,11 +5,12 @@
 
 typedef struct 
 {
+    int running;
     Job *jobs;
     int job_next_id;
     int last_exit_status;
-} ShellContextStatus;
+} ShellContext;
 
-void shell_context_init(ShellContextStatus *ctx);
+void shell_context_init(ShellContext *ctx);
 
 #endif

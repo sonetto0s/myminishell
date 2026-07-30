@@ -8,7 +8,7 @@
 #include "command.h"
 #include "sig.h"
 
-static ShellContextStatus ctx;
+static ShellContext ctx;
 
 ShellStatus shell_init(void)
 {
@@ -20,7 +20,7 @@ ShellStatus shell_init(void)
 
 ShellStatus shell_run(void)
 {
-    while (1)
+    while (ctx.running)
     {
         Command *cmd_list = NULL;
         printf(">>MiniShell\r\n");

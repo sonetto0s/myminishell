@@ -9,7 +9,7 @@
 
 static void run_process(Command *com);
 
-int execute_command(Command *com, ShellContextStatus *ctx)
+int execute_command(Command *com, ShellContext *ctx)
 {
     if(!com->next)
         return execute_single(com,ctx);
@@ -63,7 +63,7 @@ int setredirect(Command *com)
     return 0;
 }
 
-int execute_single(Command *com, ShellContextStatus *ctx)
+int execute_single(Command *com, ShellContext *ctx)
 {
     int status;
     pid_t pid = fork();

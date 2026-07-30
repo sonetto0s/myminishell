@@ -9,9 +9,9 @@
 static void sigchld_handler(int sig);
 static void sigint_handler(int sig);
 
-static ShellContextStatus *shellctx = NULL;
+static ShellContext *shellctx;
 
-void signal_init(ShellContextStatus *ctx)
+void signal_init(ShellContext *ctx)
 {
     shellctx = ctx;
     struct sigaction sasa = {0};

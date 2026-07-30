@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-Command *parse_line(char *line,ShellContextStatus *ctx)
+Command *parse_line(char *line,ShellContext *ctx)
 {
     TokenList list;
     tokenize(line,&list);
@@ -79,7 +79,7 @@ void tokenize(char *line,TokenList *list)
     }
 }
 
-Command *build_command(TokenList *list,ShellContextStatus *ctx)
+Command *build_command(TokenList *list,ShellContext *ctx)
 {
     Command *head = NULL;
     Command *current = NULL;
