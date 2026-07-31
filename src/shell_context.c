@@ -7,3 +7,9 @@ void shell_context_init(ShellContext *ctx)
     jobmanager_init(&ctx->jobs);
     ctx->running = 1;
 }
+
+void shell_context_destroy(ShellContext *ctx)
+{
+    job_destroy(&ctx->jobs);
+    ctx->running = 0;
+}

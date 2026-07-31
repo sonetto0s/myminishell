@@ -3,6 +3,7 @@
 
 #include "job.h"
 
+
 typedef struct 
 {
     int running;
@@ -11,5 +12,6 @@ typedef struct
 } ShellContext;
 
 void shell_context_init(ShellContext *ctx);
+void shell_context_destroy(ShellContext *ctx);
 
 #endif

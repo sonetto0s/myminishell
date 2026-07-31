@@ -8,10 +8,8 @@ typedef enum{
     SHELL_STATUS_ERROR = -1
 }ShellStatus;
 
-
-
-ShellStatus shell_init(void);
-ShellStatus shell_run(void);
-void shell_cleanup(void);
+ShellStatus shell_init(ShellContext *ctx);
+ShellStatus shell_run(ShellContext *ctx);
+void shell_cleanup(ShellContext *ctx);
 
 #endif

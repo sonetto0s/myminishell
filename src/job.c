@@ -95,3 +95,16 @@ void job_reap(JobManager *manager)
         job_remove(manager, pid);
     }
 }
+
+void job_destroy(JobManager *manager)
+{
+    Job *current = manager->head;
+    while (current)
+    {
+        Job *next = current->next;
+        free(current);
+        current = next;
+    }
+    manager->head = NULL;
+    manager->nextid = 1;
+}

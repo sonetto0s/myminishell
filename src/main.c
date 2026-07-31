@@ -1,12 +1,14 @@
 #include "shell.h"
-#include "job.h"
 #include "stdio.h"
 int main()
 {
     ShellContext ctx;
-    shell_init();
-    shell_run();
-    shell_cleanup();
+    if (shell_init(&ctx) != SHELL_STATUS_OK)
+    {
+        return -1;
+    }
+    shell_run(&ctx);
+    shell_cleanup(&ctx);
 
     return 0;
 }
