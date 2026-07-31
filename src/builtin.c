@@ -61,6 +61,6 @@ int builtin_exit(Command *cmd, ShellContext *ctx)
 
 int builtin_job(Command *cmd, ShellContext *ctx)
 {
-    job_list(ctx->jobs);
+    job_list(&ctx->jobs);
     return 0;
 }

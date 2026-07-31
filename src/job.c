@@ -12,7 +12,7 @@ void job_init(Job *job)
     job->next = NULL;
 }
 
-void job_add(Job **head,pid_t pid,char *command,int id)
+void job_add(JobManager *manager,pid_t pid,char *command)
 {
     Job *new_job = malloc(sizeof(Job));
     if (new_job == NULL)
@@ -21,17 +21,17 @@ void job_add(Job **head,pid_t pid,char *command,int id)
         return;
     }
     job_init(new_job);
-    new_job->id = id;
+    new_job->id = manager->nextid++;
     new_job->pid = pid;
     strncpy(new_job->command, command, sizeof(new_job->command) - 1);
     new_job->command[sizeof(new_job->command) - 1] = '\0';
-    new_job->next = *head;
-    *head = new_job;
+    new_job->next = manager->head;
+    manager->head = new_job;
 }
 
-void job_list(Job *head)
+void job_list(JobManager *manager)
 {
-    Job *current = head;
+    Job *current = manager->head;
     while(current)
     {
         printf("[%d] \n", current->id);
@@ -45,9 +45,9 @@ void job_list(Job *head)
     }
 }
 
-Job *job_find(Job *head, pid_t pids)
+Job *job_find(JobManager *manager, pid_t pids)
 {
-    Job *current = head;
+    Job *current = manager->head;
     while (current)
     {
         if (current->pid == pids)
@@ -58,16 +58,16 @@ Job *job_find(Job *head, pid_t pids)
     return NULL;
 }
 
-void job_remove(Job **head,pid_t pids)
+void job_remove(JobManager *manager, pid_t pids)
 {
-    Job *current = *head;
+    Job *current = manager->head;
     Job *prev = NULL;
     while (current)
     {
         if (current->pid == pids)
         {
             if (prev == NULL)
-                *head = current->next;
+                manager->head = current->next;
             else
                 prev->next = current->next;
 
@@ -77,4 +77,10 @@ void job_remove(Job **head,pid_t pids)
         prev = current;
         current = current->next;
     }
+}
+ 
+void jobmanager_init(JobManager *manager)
+{
+    manager->head = NULL;
+    manager->nextid = 1;
 }

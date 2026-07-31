@@ -17,10 +17,16 @@ typedef struct Job{
     struct Job *next;
 }Job;
 
+typedef struct{
+    Job *head;
+    int nextid;
+} JobManager;
+
 void job_init(Job *job);
-void job_add(Job **head, pid_t pid, char *command, int id);
-void job_list(Job *head);
-Job *job_find(Job *head, pid_t pid);
-void job_remove(Job **head, pid_t pids);
+void jobmanager_init(JobManager *manager);
+void job_add(JobManager *manager, pid_t pid, char *command);
+void job_list(JobManager *manager);
+Job *job_find(JobManager *manager, pid_t pid);
+void job_remove(JobManager *manager, pid_t pids);
 
 #endif
