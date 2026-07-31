@@ -3,6 +3,7 @@
 #include "stdio.h"
 int main()
 {
+    ShellContext ctx;
     shell_init();
     shell_run();
     shell_cleanup();

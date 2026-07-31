@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/wait.h>
 
 void job_init(Job *job)
 {
@@ -83,4 +84,14 @@ void jobmanager_init(JobManager *manager)
 {
     manager->head = NULL;
     manager->nextid = 1;
+}
+
+void job_reap(JobManager *manager)
+{
+    int status;
+    pid_t pid;
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+    {
+        job_remove(manager, pid);
+    }
 }

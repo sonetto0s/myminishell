@@ -2,7 +2,7 @@
 
 ## 本文件用以记录此项目整体架构实现,整体运行逻辑
 
-## V0.9.1  架构
+## V0.9.2  架构
 ```
 主程序:
 main
@@ -62,3 +62,15 @@ sigchld_handler/sigint_handler      (优化信号调用逻辑)
 shell_context 层:
 shell_status_init                   (初始化shell状态结构体)
         
+
+event 层:
+event_init                          (初始化事件驱动)
+ |
+event_getfd                         (返回读端值)
+ |
+event_notify                        (反馈事件驱动状态)
+ |
+event_shut                          (关闭文件)
+
+shell_context 层:
+shell_context_init                  (初始化shell状态管理)

@@ -28,5 +28,5 @@ void job_add(JobManager *manager, pid_t pid, char *command);
 void job_list(JobManager *manager);
 Job *job_find(JobManager *manager, pid_t pid);
 void job_remove(JobManager *manager, pid_t pids);
-
+void job_reap(JobManager *manager);
 #endif

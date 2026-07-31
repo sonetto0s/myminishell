@@ -2,18 +2,17 @@
 #include "sig.h"
 #include <signal.h>
 #include <stdio.h>
-#include <sys/wait.h>
-#include "job.h"
+#include <unistd.h>
+#include "event.h"
 
 
 static void sigchld_handler(int sig);
 static void sigint_handler(int sig);
 
-static ShellContext *shellctx;
 
 void signal_init(ShellContext *ctx)
 {
-    shellctx = ctx;
+    (void)ctx;
     struct sigaction sasa = {0};
     sasa.sa_handler = sigint_handler;
     sigemptyset(&sasa.sa_mask);
@@ -41,17 +40,11 @@ void signal_reset_child(void)
 static void sigchld_handler(int sig)
 {
     (void)sig;
-    int status = 0;
-    pid_t pid;
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
-    {
-        if (shellctx)
-            job_remove(&shellctx->jobs, pid);
-    }
+    event_notify();
 }
 
 static void sigint_handler(int sig)
 {
     (void)sig;
-    printf("\n");
+    write(STDOUT_FILENO, "\n", 1);
 }
