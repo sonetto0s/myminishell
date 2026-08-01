@@ -11,16 +11,20 @@
 #include "sig.h"
 #include "event.h"
 #include "job.h"
+#include "log.h"
+#include "error.h"
+
 
 ShellStatus shell_init(ShellContext *ctx)
 {
+    log_init();
     shell_context_init(ctx);
     if (event_init() < 0)
     {
         return SHELL_STATUS_ERROR;
     }
     signal_init(ctx);
-    printf(">>shell初始化成功\r\n");
+    log_info(">>shell初始化成功");
     return SHELL_STATUS_OK;
 }
 
@@ -32,7 +36,7 @@ ShellStatus shell_run(ShellContext *ctx)
     {
         if (prompt)
         {
-            printf(">>MiniShell ");
+            printf(">>%s ",ctx->config.prompts);
             fflush(stdout);
             prompt = 0;
         }
@@ -46,7 +50,7 @@ ShellStatus shell_run(ShellContext *ctx)
         {
             if (errno == EINTR)
                 continue;
-            perror("select");
+            log_error("select failed");
             break;
         }
         if (FD_ISSET(event_fd, &readfds))
@@ -80,6 +84,15 @@ ShellStatus shell_run(ShellContext *ctx)
             {
                 int status = dispatcher_command(cmd_list, ctx);
                 ctx->last_exit_status = status;
+                if (status < 0)
+                {
+                    if (status == -EINTR)
+                    {
+                        continue;
+                    }
+                    
+                    printf("%s\n", Minishellerror_string(status));
+                }
                 command_free(cmd_list);
                 prompt = 1;
             }

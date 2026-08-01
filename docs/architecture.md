@@ -1,8 +1,97 @@
 # architecture文件说明
 
-## 本文件用以记录此项目整体架构实现,整体运行逻辑
+## 本文件用以记录此项目整体架构实现,模块职责以及程序运行流程
 
-## V0.9.3  架构
+## 整体架构
+```
+
+                         main
+                          |
+                     shell_init
+                          |
+                 初始化ShellContext
+                          |      
+        |                 |                |
+     config              log             signal
+        |                 |                |
+ config_load          log_init        signal_init
+        |                 |                |
+                          |
+                     初始化Event
+                          |
+                     shell_run
+                          |
+                     读取用户输入
+                          |
+                       fgets
+                          |
+                     trim_line
+                          |
+                    parse_line
+                          |
+                      tokenize
+                          |
+                   build_command
+                          |
+                    Command填充
+                          |
+                 dispatcher_command
+                          |
+              |                       |
+           builtin                executor
+              |                       |
+              |                       |
+          内建命令执行          execute_command
+                                      |
+                         |                         |
+                 execute_single          execute_pipeline
+                         |                         |
+                                      |
+                               setredirect()
+                                      |
+                               run_process()
+                                      |
+                                    fork()
+                                      |
+                                   execvp()
+                                      |
+                                 外部程序执行
+
+
+                shell_cleanup()
+                     |
+                event_shut()
+                     |
+                 Shell退出
+
+后台任务流程:
+
+ Command 
+    |
+job_add
+    |
+JobManager
+    |
+select监听Event
+    |
+event_notify
+    |
+sigchld_handler
+    |
+job_reap()
+
+
+错误处理流程:
+
+各模块返回错误码
+ |
+Error模块统一错误处理
+
+
+```
+
+
+## V1.0  各层模块调用流程
 ```
 主程序:
 main
@@ -29,9 +118,12 @@ dispatcher_command   (判断输入指令类型)
 built/execute        (实现内部/外部指令执行)
  | 
 
-```
 
 parser层:
+fgets           (读取输入)    
+ |
+trim_line       (分割字符串)
+ |
 tokenize        (引入tokenize,分析复杂指令符号,优化输入字符解析)
  |         
 build_command   (判断复杂指令符号,将结构体填充,传导至parse_line函数)
@@ -54,8 +146,9 @@ setredirect                         (实现重定向)
  |
 run_process                         (实现进程转换)
 
+
 signal 层:
-signal_init/signal_reset_child      (实现信号数据初始化+忽略/不忽略Ctrl+C)
+signal_init/signal_reset_child      (实现信号数据初始化+实现Ctrl+C)
  |
 sigchld_handler/sigint_handler      (优化信号调用逻辑)
 
@@ -72,5 +165,35 @@ event_notify                        (反馈事件驱动状态)
  |
 event_shut                          (关闭文件)
 
+
 shell_context 层:
 shell_context_init                  (初始化shell状态管理)
+
+
+job 层:
+job_init                             (初始化job状态管理)
+    |
+job_add                              (填充job数据)
+    |
+JobManager                           (管理job自身顺序)
+    |
+job_reap                             (回收job数据中pid部分)
+
+config 配置层:
+config_init                          (初始化config配置)
+      |
+config_load                          (装载config.conf配置)
+      |
+config.conf                          (提供配置)
+
+log 层:
+log_init                             (还能是啥，实在懒得写了☠️)
+ |
+log_write                            (提供类printf模板)
+ |
+log_info/error/debug                 (打印调试信息)
+
+error 模块层:
+Minishellerror_string                (提供errro报错类型)
+
+```

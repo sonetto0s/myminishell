@@ -1,11 +1,26 @@
 # myminishell
 
 ## 项目简介
- 这是一个基于 Linux 的MiniShell,用来实现进程控制与命令解析。
 
-## 当前版本: V0.9.3
+ 这是一个基于 Linux 用户态的MiniShell,用来实现进程控制与命令解析。以此深入学习Linux系统编程相关机制🙃
+
+## 开发环境
+
+- OS: Ubuntu 22.04
+- compiler: GCC
+- 编译工具: Make
+- 编程语言: C
+
+## 当前版本: V1.0
 
 ## 更新日志
+
+V1.0:
+- 完成MiniShell工程化重构
+- 新增Config配置管理模块
+- 新增Error错误处理模块
+- 新增Log日志系统
+- 新增基础框架测试
 
 V0.9.3:
 - 完善select构建基础事件循环
@@ -117,57 +132,80 @@ V0.5:
 
 ## 运行方式
 
+### 编译Shell
+
 - Makefile
 - make
 - ./shell
+
+### 编译测试
+- Makefile
+- make test
+- ./test
+
 
 ## 项目结构
 
 ```
 .
-├── build
-│   ├── common
-│   │   ├── log.o
-│   │   └── utils.o
-│   └── src
-│       ├── builtin.o
-│       ├── command.o
-│       ├── dispatcher.o
-│       ├── executor.o
-│       ├── main.o
-│       ├── parser.o
-│       ├── shell.o
-│       └── sig.o
 ├── common
+│   ├── error.c
+│   ├── error.h
 │   ├── log.c
 │   ├── log.h
 │   ├── utils.c
 │   └── utils.h
+├── config
+│   ├── config.c
+│   ├── config.conf
+│   └── config.h
 ├── docs
 │   ├── architecture.md
 │   ├── debug_log.md
-│   └── module.md
+│   ├── module.md
+│   └── test.md
 ├── include
 │   ├── builtin.h
 │   ├── command.h
 │   ├── dispatcher.h
+│   ├── event.h
 │   ├── executor.h
+│   ├── job.h
 │   ├── parser.h
 │   ├── shell_context.h
 │   ├── shell.h
 │   └── sig.h
 ├── Makefile
 ├── README.md
-├── shell
-└── src
-    ├── builtin.c
-    ├── command.c
-    ├── dispatcher.c
-    ├── executor.c
-    ├── main.c
-    ├── parser.c
-    ├── shell.c
-    ├── shell_context.c
-    └── sig.c
+├── src
+│   ├── builtin.c
+│   ├── command.c
+│   ├── dispatcher.c
+│   ├── event.c
+│   ├── executor.c
+│   ├── job.c
+│   ├── main.c
+│   ├── parser.c
+│   ├── shell.c
+│   ├── shell_context.c
+│   └── sig.c
+└── tests
+    ├── test_config.c
+    ├── test_log.c
+    ├── test_main.c
+    └── test_parser.c
 
 ```
+
+## 技术栈
+
+- C 语言(C11)
+- Linux 应用/系统编程
+- 进程管理机制
+- fork/exec/wait等基础函数调用
+- Pipe IPC通讯
+- Signal 处理方式
+- select 监听机制(后续升级若情况需要可能会引入epoll)
+- Makefile
+- Git
+- GDB 调试
