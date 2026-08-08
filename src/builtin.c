@@ -1,34 +1,19 @@
 #include "builtin.h"
+#include "shell_context.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "builtin_table.h"
 
-static BuiltinEntry builtin_table[] = {
-    {"cd", builtin_cd},
-    {"pwd", builtin_pwd},
-    {"exit", builtin_exit},
-    {"jobs",builtin_job},
-};
-
-BuiltinEntry *builtin_lookup(const char *name)
+int builtin_cd(Command *cmd, struct ShellContext *ctx)
 {
-    for (int i = 0; i < sizeof(builtin_table) / sizeof(builtin_table[0]); i++)
+    (void)ctx;
+    if (cmd->argc < 2)
     {
-        if (strcmp(name, builtin_table[i].name) == 0)
-            return &builtin_table[i];
+        fprintf(stderr, "你cd后面没写东西\r\n");
+        return -1;
     }
-    return NULL;
- 
-}
-
-int builtin_cd(Command *cmd, ShellContext *ctx)
-{
-    if (cmd->argc <2)
-     {
-         fprintf(stderr,"你cd后面没写东西\r\n");
-         return -1;
-     }
       
     if (chdir(cmd->argv[1]) == -1)
     {
@@ -38,8 +23,10 @@ int builtin_cd(Command *cmd, ShellContext *ctx)
     
     return 0;
 }
-int builtin_pwd(Command *cmd, ShellContext *ctx)
+int builtin_pwd(Command *cmd, struct ShellContext *ctx)
 {
+    (void)ctx;
+    (void)cmd;
     char buff[100];
     if (getcwd(buff, sizeof(buff)) != NULL)
     {
@@ -53,14 +40,45 @@ int builtin_pwd(Command *cmd, ShellContext *ctx)
     }
 }
 
-int builtin_exit(Command *cmd, ShellContext *ctx)
+int builtin_exit(Command *cmd, struct ShellContext *ctx)
 {
+    (void)cmd;
     ctx->running = 0;
     return 0;
 }
 
-int builtin_job(Command *cmd, ShellContext *ctx)
+int builtin_job(Command *cmd, struct ShellContext *ctx)
+{
+    (void)cmd;
+    job_list(&ctx->jobs);
+    return 0;
+}
+
+int builtin_help(Command *cmd, struct ShellContext *ctx)
+{
+    (void)cmd;
+    (void)ctx;
+
+    printf("Builtin commands are: \n");
+    for (size_t i = 0; i < builtin_count(); i++)
+    {
+        BuiltinEntry *entry = builtin_get(i);
+        if (entry)
+        {
+            printf(" %s\n", entry->name);
+        }
+    }
+    return 0;
+}
+
+int builtin_jobs(Command *cmd, struct ShellContext *ctx)
 {
     job_list(&ctx->jobs);
+    return 0;
+}
+int builtin_status(Command *cmd, struct ShellContext *ctx)
+{
+    (void)cmd;
+    printf("%d\n", ctx->last_exit_status);
     return 0;
 }

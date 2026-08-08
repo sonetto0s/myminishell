@@ -1,0 +1,38 @@
+#include "builtin_table.h"
+#include "builtin.h"
+#include <sys/types.h>
+#include <string.h>
+
+static BuiltinEntry builtin_table[] = {
+    {"cd", builtin_cd},
+    {"pwd", builtin_pwd},
+    {"exit", builtin_exit},
+    {"jobs", builtin_job},
+    {"help", builtin_help},
+    {"jobs", builtin_jobs},
+    {"status", builtin_status},
+};
+
+BuiltinEntry *builtin_lookup(const char *name)
+{
+    for (size_t i = 0; i < sizeof(builtin_table) / sizeof(builtin_table[0]); i++)
+    {
+        if (strcmp(name, builtin_table[i].name) == 0)
+            return &builtin_table[i];
+    }
+    return NULL;
+}
+
+
+BuiltinEntry *builtin_get(size_t index)
+{
+    if (index >= builtin_count())
+        return NULL;
+
+    return &builtin_table[index];
+}
+
+size_t builtin_count(void)
+{
+    return sizeof(builtin_table) / sizeof(builtin_table[0]);
+}

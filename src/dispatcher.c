@@ -2,6 +2,7 @@
 #include "builtin.h"
 #include "executor.h"
 #include <stdio.h>
+#include "builtin_table.h"
 
 int dispatcher_command(Command *cmd, ShellContext *ctx)
 {
