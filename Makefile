@@ -39,7 +39,8 @@ APP_SRC := \
 	common/utils.c \
 	common/log.c \
 	common/error.c \
-	config/config.c
+	config/config.c \
+	src/system_info.c
 
 
 

@@ -6,3 +6,4 @@ void trim_line(char *buff)
     if (len > 0 && buff[len-1]=='\n')
         buff[len - 1] = '\0';
 }
+

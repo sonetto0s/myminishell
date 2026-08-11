@@ -84,6 +84,10 @@ Command *build_command(TokenList *list,ShellContext *ctx)
     Command *head = NULL;
     Command *current = NULL;
     head = new_command();
+    if (head == NULL)
+    {
+        return NULL;
+    }
     current = head;
     for (int i = 0; i < list->count; i++)
     {
@@ -91,39 +95,46 @@ Command *build_command(TokenList *list,ShellContext *ctx)
            {
             case TOKEN_WORD:
                 if (current->argc >= MAX_ARGS)
-                    return NULL;
+                    goto fail;
 
                 if (strcmp(list->token[i].text, "$?") == 0)
                 {
                     char buffer[64];
                     snprintf(buffer, sizeof(buffer), "%d", ctx->last_exit_status);
                     current->argv[current->argc] = strdup(buffer);
+                    
                 }
                 else
                 {
                     current->argv[current->argc] = strdup(list->token[i].text);
                 }
                 if (current->argv[current->argc] == NULL)
-                    return NULL;
+                    goto fail;
                 current->argc++;
                 break;
             case TOKEN_REDIRECT_IN:
                 if (i + 1 >= list->count)
-                    return NULL;
+                    goto fail;
                 current->redirect.input_file = strdup(list->token[i + 1].text);
+                if (current->redirect.input_file == NULL)
+                    goto fail;
                 i++;
                 break;
             case TOKEN_REDIRECT_OUT:
                 if (i + 1 >= list->count)
-                    return NULL;
+                    goto fail;
                 current->redirect.output_file = strdup(list->token[i + 1].text);
+                if (current->redirect.output_file == NULL)
+                    goto fail;
                 current->redirect.append = 0;
                 i++;
                 break;
             case TOKEN_REDIRECT_APPEND:
                 if (i + 1 >= list->count)
-                    return NULL;
+                    goto fail;
                 current->redirect.output_file = strdup(list->token[i + 1].text);
+                if (current->redirect.output_file == NULL)
+                    goto fail;
                 current->redirect.append = 1;
                 i++;
                 break;
@@ -132,10 +143,10 @@ Command *build_command(TokenList *list,ShellContext *ctx)
                 break;
             case TOKEN_PIPE:
                 if (i + 1 >= list->count)
-                    return NULL;
+                    goto fail;
                 Command *new = new_command();
                 if (new == NULL)
-                    return NULL;
+                    goto fail;
                 current->next = new;
                 current = new;
                 break;
@@ -148,6 +159,9 @@ Command *build_command(TokenList *list,ShellContext *ctx)
         iterator = iterator->next;
     }
     return head;
+    fail:
+        command_free(head);
+        return NULL;
 }
 
 Command *new_command()

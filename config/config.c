@@ -1,12 +1,15 @@
 #include "config.h"
 #include "utils.h"
+#include "error.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 void config_init(MiniShellConfig * configs)
 {
-    strcpy(configs->prompts,"MiniShell");
+    if (configs == NULL)
+        return;
+    strcpy(configs->prompts, "MiniShell");
     configs->max_job = 64;
     configs->debug = 0;
 }
@@ -16,7 +19,7 @@ int config_load(MiniShellConfig *configs, const char *filename)
     FILE *fp = fopen(filename, "r");
     if (fp == NULL)
     {
-        return -1;
+        return MiniShell_ERR_OPEN;
     }
     char line[128];
     while (fgets(line, sizeof(line), fp))
@@ -25,7 +28,7 @@ int config_load(MiniShellConfig *configs, const char *filename)
     }
 
     fclose(fp);
-    return 0;
+    return MiniShell_OK;
 }
 
 void config_parse_line(char *line, MiniShellConfig *configs)

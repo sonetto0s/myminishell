@@ -88,7 +88,11 @@ int execute_single(Command *com, ShellContext *ctx)
         return MiniShell_OK;
     }
 
-    waitpid(pid, &status, 0);
+    if (waitpid(pid, &status, 0) < 0)
+    {
+        log_error("failed wait");
+        return MiniShell_ERR_UNKNOWN;
+    }
 
     if (WIFEXITED(status))
     {
@@ -202,7 +206,11 @@ int execute_pipeline(Command *com)
     }
     for (int i = 0; i < count; i++)
     {
-        waitpid(pids[i], &statuses, 0);
+        if (waitpid(pids[i], &statuses, 0) < 0)
+        {
+            log_error("waitpid failed");
+            return MiniShell_ERR_UNKNOWN;
+        }
         if (i == count - 1)
             last_status = statuses;
     }

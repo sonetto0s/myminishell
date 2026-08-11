@@ -7,10 +7,10 @@ static BuiltinEntry builtin_table[] = {
     {"cd", builtin_cd},
     {"pwd", builtin_pwd},
     {"exit", builtin_exit},
-    {"jobs", builtin_job},
-    {"help", builtin_help},
     {"jobs", builtin_jobs},
+    {"help", builtin_help},
     {"status", builtin_status},
+    {"sysinfo",builtin_sysinfo},
 };
 
 BuiltinEntry *builtin_lookup(const char *name)

@@ -8,9 +8,9 @@ struct ShellContext;
 int builtin_cd(Command *cmd, struct ShellContext *ctx);
 int builtin_pwd(Command *cmd, struct ShellContext *ctx);
 int builtin_exit(Command *cmd, struct ShellContext *ctx);
-int builtin_job(Command *cmd, struct ShellContext *ctx);
 int builtin_help(Command *cmd, struct ShellContext *ctx);
 int builtin_jobs(Command *cmd, struct ShellContext *ctx);
 int builtin_status(Command *cmd, struct ShellContext *ctx);
+int builtin_sysinfo(Command *cmd, struct ShellContext *ctx);
 
 #endif

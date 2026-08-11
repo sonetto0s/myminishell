@@ -2,7 +2,7 @@
 
 ## 本文件用以记录测试指令运行结果,验证当前版本效果
 
-## 当前版本 : V1.1
+## 当前版本 : V1.2
 
 ## 运行环境
 - 系统:Ubuntu 22.04
@@ -63,6 +63,16 @@ sleep 100:
 Ctrl + D测试:
 >>MiniShell 已退出
 
+sysinfo 测试:
+
+========== System ==========
+Kernel       : 6.17.0-35-generic
+Hostname     : matilda
+Architecture : x86_64
+CPU Model : AMD Ryzen 9 8940HX with Radeon Graphics
+Memory Total : 3867 MB
+Memory Available : 1719 MB
+Uptime : 11200.97 seconds
 
 ```
 

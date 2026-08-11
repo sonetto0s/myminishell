@@ -1,4 +1,5 @@
 #include "job.h"
+#include "log.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,6 +7,8 @@
 
 void job_init(Job *job)
 {
+    if (job == NULL)
+        return;
     job->id = 0;
     job->pid = 0;
     job->Status = JOB_RUNNING;
@@ -18,7 +21,7 @@ void job_add(JobManager *manager,pid_t pid,char *command)
     Job *new_job = malloc(sizeof(Job));
     if (new_job == NULL)
     {
-        perror("malloc");
+        log_error("malloc job failed");
         return;
     }
     job_init(new_job);
@@ -28,6 +31,7 @@ void job_add(JobManager *manager,pid_t pid,char *command)
     new_job->command[sizeof(new_job->command) - 1] = '\0';
     new_job->next = manager->head;
     manager->head = new_job;
+
 }
 
 void job_list(JobManager *manager)
