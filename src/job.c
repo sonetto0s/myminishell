@@ -16,13 +16,13 @@ void job_init(Job *job)
     job->next = NULL;
 }
 
-void job_add(JobManager *manager,pid_t pid,char *command)
+int job_add(JobManager *manager,pid_t pid,char *command)
 {
     Job *new_job = malloc(sizeof(Job));
     if (new_job == NULL)
     {
         log_error("malloc job failed");
-        return;
+        return -1;
     }
     job_init(new_job);
     new_job->id = manager->nextid++;
@@ -31,7 +31,7 @@ void job_add(JobManager *manager,pid_t pid,char *command)
     new_job->command[sizeof(new_job->command) - 1] = '\0';
     new_job->next = manager->head;
     manager->head = new_job;
-
+    return 0;
 }
 
 void job_list(JobManager *manager)
@@ -99,7 +99,14 @@ void job_reap(JobManager *manager)
         Job *job = job_find(manager, pid);
         if (job)
         {
-            printf("\n[%d] %s is finished\n", job->id, job->command);
+            if (WIFEXITED(status))
+            {
+                printf("\n[%d] %s is finished,exit is%d\n", job->id, job->command, WEXITSTATUS(status));
+            }
+            else if (WIFSIGNALED(status))
+            {
+                printf("\n[%d] %s is killed by signal %d\n", job->id, job->command, WTERMSIG(status));
+            }
         }
         job_remove(manager, pid);
     }

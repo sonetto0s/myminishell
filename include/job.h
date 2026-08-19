@@ -24,7 +24,7 @@ typedef struct{
 
 void job_init(Job *job);
 void jobmanager_init(JobManager *manager);
-void job_add(JobManager *manager, pid_t pid, char *command);
+int job_add(JobManager *manager, pid_t pid, char *command);
 void job_list(JobManager *manager);
 Job *job_find(JobManager *manager, pid_t pid);
 void job_remove(JobManager *manager, pid_t pids);

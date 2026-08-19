@@ -1,5 +1,6 @@
 #include "executor.h"
 #include "sig.h"
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -40,11 +41,11 @@ int setredirect(Command *com)
           }
         if (dup2(fd, STDOUT_FILENO) == -1)
         {
+            close(fd);
             log_error("dup2 failed");
             return MiniShell_ERR_DUP2;
         }
         close(fd);
-      
     }
 
     if (com->redirect.input_file)
@@ -57,6 +58,7 @@ int setredirect(Command *com)
         }
         if (dup2(fd, STDIN_FILENO) == -1)
         {
+            close(fd);
             log_error("dup2 failed");
             return MiniShell_ERR_DUP2;
         }
@@ -78,13 +80,20 @@ int execute_single(Command *com, ShellContext *ctx)
     {
         if (setredirect(com) != MiniShell_OK)
         {
-            _exit(EXIT_FAILURE);
+            log_error("redirect failed");
+            _exit(1);
         }
         run_process(com);
     }
     if (com->background)
     {
-        job_add(&ctx->jobs, pid, com->argv[0]);
+        if (job_add(&ctx->jobs, pid, com->argv[0]) < 0)
+        {
+            log_error("falied add job");
+            kill(pid, SIGTERM);
+            waitpid(pid, NULL, 0);
+            return MiniShell_ERR_UNKNOWN;
+        }
         return MiniShell_OK;
     }
 
@@ -107,7 +116,6 @@ int execute_single(Command *com, ShellContext *ctx)
 
 int execute_pipeline(Command *com)
 {
-    
     Command *current = com;
     int pipe_fd = -1;
     int count = 0;
@@ -122,6 +130,11 @@ int execute_pipeline(Command *com)
             if (pipe(pipefd) < 0)
             {
                 log_error("pipe create failed");
+                for (int i = 0; i < count; i++)
+                {
+                    kill(pids[i], SIGTERM);
+                    waitpid(pids[i], NULL, 0);
+                }
                 return MiniShell_ERR_PIPE;
             }
         }
@@ -134,6 +147,13 @@ int execute_pipeline(Command *com)
         }
         if (pid > 0)
         {
+            if (count >= 64)
+            {
+                log_error("the pipeline commands are too many?");
+                kill(pid, SIGTERM);
+                waitpid(pid, NULL, 0);
+                return MiniShell_ERR_UNKNOWN;
+            }
             pids[count++] = pid;
         }
 
@@ -144,7 +164,7 @@ int execute_pipeline(Command *com)
                 if (dup2(pipefd[1], STDOUT_FILENO) == -1)
                 {
                     log_error("dup2 failed");
-                    _exit(EXIT_FAILURE);
+                    _exit(127);
                 }
                 close(pipefd[1]);
                 close(pipefd[0]);
@@ -155,13 +175,13 @@ int execute_pipeline(Command *com)
                 if (dup2(pipefd[1], STDOUT_FILENO) == -1)
                 {
                     log_error("dup2 failed");
-                    _exit(EXIT_FAILURE);
+                    _exit(127);
                 }
 
                 if (dup2(pipe_fd, STDIN_FILENO) == -1)
                 {
                     log_error("dup2 failed");
-                    _exit(EXIT_FAILURE);
+                    _exit(127);
                 }
                 close(pipefd[0]);
                 close(pipefd[1]);
@@ -174,7 +194,7 @@ int execute_pipeline(Command *com)
                     if (dup2(pipe_fd, STDIN_FILENO) == -1)
                     {
                         log_error("dup2 failed");
-                        _exit(EXIT_FAILURE);
+                        _exit(127);
                     }
                     close(pipe_fd);
                 }
@@ -182,7 +202,8 @@ int execute_pipeline(Command *com)
             }
             if (setredirect(current) != MiniShell_OK)
             {
-                _exit(EXIT_FAILURE);
+                log_error("redirect failed");
+                _exit(127);
             }
             run_process(current);
         }
