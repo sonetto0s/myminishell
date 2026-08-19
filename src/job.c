@@ -96,6 +96,11 @@ void job_reap(JobManager *manager)
     pid_t pid;
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
+        Job *job = job_find(manager, pid);
+        if (job)
+        {
+            printf("\n[%d] %s is finished\n", job->id, job->command);
+        }
         job_remove(manager, pid);
     }
 }
