@@ -2,7 +2,7 @@
 #define PARSER_H
 
 
-#define MAX_TOKEN 16
+#define MAX_TOKEN 128
 #define TOKEN_SIZE 64
 
 #include "command.h"

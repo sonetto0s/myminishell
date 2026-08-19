@@ -28,6 +28,7 @@ void command_free(Command *cmd)
         for (int i = 0; i < cmd->argc; i++)
         {
             free(cmd->argv[i]);
+            cmd->argv[i] = NULL;
         }
         free(cmd->redirect.output_file);
         free(cmd->redirect.input_file);
