@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/select.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "shell.h"
 #include "utils.h"
@@ -49,7 +50,10 @@ ShellStatus shell_run(ShellContext *ctx)
         if (ret < 0)
         {
             if (errno == EINTR)
+            {
+                prompt = 1;
                 continue;
+            }
             log_error("select failed");
             break;
         }
@@ -72,6 +76,7 @@ ShellStatus shell_run(ShellContext *ctx)
                 break;
             }
             job_reap(&ctx->jobs);
+            prompt = 1;
         }
         if (FD_ISSET(STDIN_FILENO, &readfds))
         {
@@ -89,11 +94,11 @@ ShellStatus shell_run(ShellContext *ctx)
                 if (errno == EINTR)
                 {
                     clearerr(stdin);
+                    prompt = 1;
                     continue;
                 }
                 break;
             }
-
             trim_line(line);
             cmd_list = parse_line(line, ctx);
             if (cmd_list != NULL)
@@ -106,15 +111,16 @@ ShellStatus shell_run(ShellContext *ctx)
                     {
                         command_free(cmd_list);
                         free(line);
+                        prompt = 1;
                         continue;
                     }
-
                     printf("%s\n", minishell_error_string(status));
                 }
                 command_free(cmd_list);
-                prompt = 1;
             }
+            prompt = 1;
             free(line);
+
         }
     }
     return SHELL_STATUS_OK;
