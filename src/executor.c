@@ -125,6 +125,11 @@ int execute_pipeline(Command *com)
     while (current)
     {
         int pipefd[2];
+        if (count >= 64)
+        {
+            log_error("the pipeline commands are too many?");
+            return MiniShell_ERR_UNKNOWN;
+        }
         if (current->next)
         {
             if (pipe(pipefd) < 0)
@@ -147,13 +152,13 @@ int execute_pipeline(Command *com)
         }
         if (pid > 0)
         {
-            if (count >= 64)
-            {
-                log_error("the pipeline commands are too many?");
-                kill(pid, SIGTERM);
-                waitpid(pid, NULL, 0);
-                return MiniShell_ERR_UNKNOWN;
-            }
+            // if (count >= 64)
+            // {
+            //     log_error("the pipeline commands are too many?");
+            //     kill(pid, SIGTERM);
+            //     waitpid(pid, NULL, 0);
+            //     return MiniShell_ERR_UNKNOWN;
+            // }
             pids[count++] = pid;
         }
 
