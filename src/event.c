@@ -1,11 +1,16 @@
 #include "event.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 
-static int event_pipe[2];
+static int event_pipe[2] = {-1, -1};
 
 int event_init(void)
 {
+    if (event_pipe[0] != -1 || event_pipe[1] != -1)
+    {
+        return 0;
+    }
     if (pipe(event_pipe) < 0)
     {
         perror("pipe");
@@ -21,12 +26,33 @@ int event_getfd(void)
 
 void event_notify(void)
 {
+    if (event_pipe[1] < 0)
+    {
+        return;
+    }
     char notice_msg = 'x';
-    write(event_pipe[1], &notice_msg, 1);
+    ssize_t ret;
+    do
+    {
+        ret = write(event_pipe[1], &notice_msg, 1);
+    } while (ret < 0 && errno == EINTR);
+    if (ret < 0)
+    {
+        perror("failed notify event");
+    }
 }
 
 void event_shut(void)
 {
-    close(event_pipe[0]);
-    close(event_pipe[1]);
+    if (event_pipe[0] >= 0)
+    {
+        close(event_pipe[0]);
+        event_pipe[0] = -1;
+    }
+
+    if (event_pipe[1] >= 0)
+    {
+        close(event_pipe[1]);
+        event_pipe[1] = -1;
+    }
 }

@@ -15,5 +15,5 @@ typedef enum
     MiniShell_ERR_DUP2 = -9
 } MiniShellError;
 
-const char *Minishellerror_string(MiniShellError error);
+const char *minishell_error_string(MiniShellError error);
 #endif

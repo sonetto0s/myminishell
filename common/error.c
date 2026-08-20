@@ -1,7 +1,6 @@
 #include "error.h"
 
-
-const char *Minishellerror_string(MiniShellError error)
+const char *minishell_error_string(MiniShellError error)
 {
     switch(error)
     {
@@ -22,7 +21,7 @@ const char *Minishellerror_string(MiniShellError error)
         case MiniShell_ERR_PIPE:
             return "Failed pipe operation";
         case MiniShell_ERR_UNKNOWN:
-            return "Failed unknown operation";
+            return "Failed unknown operation🫥";
         case MiniShell_ERR_DUP2:
             return "Failed dup2 operation";
         default:

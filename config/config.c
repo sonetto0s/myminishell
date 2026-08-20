@@ -9,7 +9,7 @@ void config_init(MiniShellConfig * configs)
 {
     if (configs == NULL)
         return;
-    strcpy(configs->prompts, "MiniShell");
+    strncpy(configs->prompts, "MiniShell", sizeof(configs->prompts) - 1);
     configs->max_job = 64;
     configs->debug = 0;
 }

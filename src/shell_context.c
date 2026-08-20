@@ -1,5 +1,6 @@
 #include "shell_context.h"
 #include "log.h"
+#include "error.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -9,8 +10,12 @@ void shell_context_init(ShellContext *ctx)
     ctx->last_exit_status = 0;
     jobmanager_init(&ctx->jobs);
     config_init(&ctx->config);
-    config_load(&ctx->config, "config/config.conf");
-    if(ctx->config.debug)
+    int ret = config_load(&ctx->config, "config/config.conf");
+    if (ret != MiniShell_OK)
+    {
+        log_info("failed load config");
+    }
+    if (ctx->config.debug)
     {
         log_setlevel(LOG_DEBUG);
     }

@@ -30,4 +30,6 @@ Job *job_find(JobManager *manager, pid_t pid);
 void job_remove(JobManager *manager, pid_t pids);
 void job_reap(JobManager *manager);
 void job_destroy(JobManager *manager);
+void job_cleanup_done(JobManager *manager);
+
 #endif

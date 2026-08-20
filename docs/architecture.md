@@ -194,6 +194,6 @@ log_write                            (提供类printf模板)
 log_info/error/debug                 (打印调试信息)
 
 error 模块层:
-Minishellerror_string                (提供errro报错类型)
+minishell_error_string                (提供errro报错类型)
 
 ```

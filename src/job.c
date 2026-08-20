@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 void job_init(Job *job)
 {
@@ -39,8 +40,7 @@ void job_list(JobManager *manager)
     Job *current = manager->head;
     while(current)
     {
-        printf("[%d] \n", current->id);
-        printf("%s\n", current->command);
+        printf("[%d] %s\n", current->id, current->command);
         if (current->Status == JOB_RUNNING)
             printf("now it is running\n");
         else
@@ -92,24 +92,34 @@ void jobmanager_init(JobManager *manager)
 
 void job_reap(JobManager *manager)
 {
+    Job *current = manager->head;
     int status;
-    pid_t pid;
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+    while (current)
     {
-        Job *job = job_find(manager, pid);
-        if (job)
+        Job *next = current->next;
+        pid_t ret = waitpid(current->pid, &status, WNOHANG);
+        if (ret < 0)
+        {
+            if (errno != ECHILD)
+            {
+                log_error("waitpid failed");
+            }
+        }
+        if (ret == current->pid)
         {
             if (WIFEXITED(status))
             {
-                printf("\n[%d] %s is finished,exit is%d\n", job->id, job->command, WEXITSTATUS(status));
+                printf("\n[%d] %s is finished,exit is%d\n", current->id, current->command, WEXITSTATUS(status));
             }
             else if (WIFSIGNALED(status))
             {
-                printf("\n[%d] %s is killed by signal %d\n", job->id, job->command, WTERMSIG(status));
+                printf("\n[%d] %s is killed by signal %d\n", current->id, current->command, WTERMSIG(status));
             }
+            current->Status = JOB_DONE;
         }
-        job_remove(manager, pid);
+        current = next;
     }
+  
 }
 
 void job_destroy(JobManager *manager)
@@ -123,4 +133,29 @@ void job_destroy(JobManager *manager)
     }
     manager->head = NULL;
     manager->nextid = 1;
+}
+
+void job_cleanup_done(JobManager *manager)
+{
+    Job *current = manager->head;
+    Job *prev = NULL;
+    while (current)
+    {
+        if (current->Status == JOB_DONE)
+        {
+            Job *temp = current;
+            if (prev)
+                prev->next = current->next;
+            else
+                manager->head = current->next;
+
+            current = current->next;
+            free(temp);
+        }
+        else
+        {
+            prev = current;
+            current = current->next;
+        }
+    }
 }

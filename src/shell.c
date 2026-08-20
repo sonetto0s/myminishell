@@ -108,8 +108,8 @@ ShellStatus shell_run(ShellContext *ctx)
                         free(line);
                         continue;
                     }
-                    
-                    printf("%s\n", Minishellerror_string(status));
+
+                    printf("%s\n", minishell_error_string(status));
                 }
                 command_free(cmd_list);
                 prompt = 1;
