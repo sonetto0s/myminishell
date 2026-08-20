@@ -7,10 +7,24 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "error.h"
 #include "log.h"
 
 static void run_process(Command *com);
+
+static void cleanup_pipeline(pid_t *pids, int count)
+{
+    for (int i = 0; i < count; i++)
+    {
+        kill(pids[i], SIGTERM);
+        while (waitpid(pids[i], NULL, 0) < 0)
+        {
+            if (errno != EINTR)
+                break;
+        }
+    }
+}
 
 int execute_command(Command *com, ShellContext *ctx)
 {
@@ -135,11 +149,7 @@ int execute_pipeline(Command *com)
             if (pipe(pipefd) < 0)
             {
                 log_error("pipe create failed");
-                for (int i = 0; i < count; i++)
-                {
-                    kill(pids[i], SIGTERM);
-                    waitpid(pids[i], NULL, 0);
-                }
+                cleanup_pipeline(pids, count);
                 return MiniShell_ERR_PIPE;
             }
         }
@@ -148,17 +158,11 @@ int execute_pipeline(Command *com)
         if (pid < 0)
         {
             log_error("fork failed");
+            cleanup_pipeline(pids, count);
             return MiniShell_ERR_FORK;
         }
         if (pid > 0)
         {
-            // if (count >= 64)
-            // {
-            //     log_error("the pipeline commands are too many?");
-            //     kill(pid, SIGTERM);
-            //     waitpid(pid, NULL, 0);
-            //     return MiniShell_ERR_UNKNOWN;
-            // }
             pids[count++] = pid;
         }
 
