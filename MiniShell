@@ -1,0 +1,5 @@
+    PID    PGID CMD
+   8506    8506 /bin/bash --init-file /home/matilda/.vscode-server/bin/fcf604774b9f2674b473065736ee75077e256353/out/vs/workbench/contrib/terminal/common/scripts/shellIntegration-bash.sh
+   8634    8634 ./shell
+   8690    8690 sleep 100
+   8745    8745 ps -o pid,pgid,cmd

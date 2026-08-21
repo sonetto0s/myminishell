@@ -31,13 +31,13 @@ typedef struct{
 
 void job_init(Job *job);
 void jobmanager_init(JobManager *manager);
-int job_add(JobManager *manager, pid_t pgid, char *command);
+Job *job_add(JobManager *manager, pid_t pgid, char *command);
 void job_list(JobManager *manager);
 Job *job_find(JobManager *manager, pid_t pgid);
 void job_remove(JobManager *manager, pid_t pgid);
 void job_reap(JobManager *manager);
 void job_destroy(JobManager *manager);
 void job_cleanup_done(JobManager *manager);
-void process_destroy(Process *process);
+int process_add(Job *job, pid_t pid);
 
 #endif

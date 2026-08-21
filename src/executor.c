@@ -13,25 +13,27 @@
 
 static void run_process(Command *com);
 
-static void cleanup_pipeline(pid_t *pids, int count)
+static void cleanup_pipeline(pid_t pgid)
 {
-    for (int i = 0; i < count; i++)
+    if (pgid <= 0)
+        return;
+    kill(-pgid, SIGTERM);
+    while (1)
     {
-        kill(pids[i], SIGTERM);
-        while (waitpid(pids[i], NULL, 0) < 0)
-        {
-            if (errno != EINTR)
-                break;
-        }
+        pid_t ret = waitpid(-pgid, NULL, 0);
+        if (ret > 0)
+            continue;
+        if (ret < 0 && errno == EINTR)
+            continue;
+        break;
     }
 }
-
 int execute_command(Command *com, ShellContext *ctx)
 {
     if(!com->next)
         return execute_single(com,ctx);
     else
-        return execute_pipeline(com);
+        return execute_pipeline(com,ctx);
 }
 
 int setredirect(Command *com)
@@ -115,13 +117,15 @@ int execute_single(Command *com, ShellContext *ctx)
     if (com->background)
     {
         pid_t pgid = pid;
-        if (job_add(&ctx->jobs, pgid, com->argv[0]) < 0)
+        Job *job = job_add(&ctx->jobs, pgid, com->argv[0]);
+        if (job == NULL)
         {
-            log_error("falied add job");
+            log_error("failed add job");
             kill(pid, SIGTERM);
             waitpid(pid, NULL, 0);
             return MiniShell_ERR_UNKNOWN;
         }
+        process_add(job, pid);
         return MiniShell_OK;
     }
 
@@ -142,7 +146,7 @@ int execute_single(Command *com, ShellContext *ctx)
     return MiniShell_ERR_UNKNOWN;
 }
 
-int execute_pipeline(Command *com)
+int execute_pipeline(Command *com, ShellContext *ctx)
 {
     Command *current = com;
     int pipe_fd = -1;
@@ -164,7 +168,7 @@ int execute_pipeline(Command *com)
             if (pipe(pipefd) < 0)
             {
                 log_error("pipe create failed");
-                cleanup_pipeline(pids, count);
+                cleanup_pipeline(pgid);
                 return MiniShell_ERR_PIPE;
             }
         }
@@ -173,7 +177,7 @@ int execute_pipeline(Command *com)
         if (pid < 0)
         {
             log_error("fork failed");
-            cleanup_pipeline(pids, count);
+            cleanup_pipeline(pgid);
             return MiniShell_ERR_FORK;
         }
         if (pid > 0)
@@ -192,8 +196,8 @@ int execute_pipeline(Command *com)
 
         if (pid == 0)
         {
-            pid_t child_pgid;
-            if (child_pgid == 0)
+            pid_t child_pgid = 0;
+            if (pgid == 0)
                 child_pgid = getpid();
             else
                 child_pgid = pgid;
@@ -265,15 +269,40 @@ int execute_pipeline(Command *com)
     {
         close(pipe_fd);
     }
-    for (int i = 0; i < count; i++)
+    if (com->background)
     {
-        if (waitpid(pids[i], &statuses, 0) < 0)
+        Job *job = job_add(&ctx->jobs, pgid, com->argv[0]);
+        if (job == NULL)
         {
-            log_error("waitpid failed");
+            cleanup_pipeline(pgid);
             return MiniShell_ERR_UNKNOWN;
         }
-        if (i == count - 1)
-            last_status = statuses;
+        for (int i = 0; i < count; i++)
+        {
+            if (process_add(job, pids[i]) < 0)
+            {
+                log_error("failed add process");
+                cleanup_pipeline(pgid);
+                return MiniShell_ERR_UNKNOWN;
+            }
+        }
+    }
+    if (!com->background)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (waitpid(pids[i], &statuses, 0) < 0)
+            {
+                log_error("waitpid failed");
+                return MiniShell_ERR_UNKNOWN;
+            }
+            if (i == count - 1)
+                last_status = statuses;
+        }
+    }
+    else
+    {
+        return MiniShell_OK;
     }
     if (WIFEXITED(last_status))
     {

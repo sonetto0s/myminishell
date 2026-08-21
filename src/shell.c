@@ -76,6 +76,7 @@ ShellStatus shell_run(ShellContext *ctx)
                 break;
             }
             job_reap(&ctx->jobs);
+            job_cleanup_done(&ctx->jobs);
             prompt = 1;
         }
         if (FD_ISSET(STDIN_FILENO, &readfds))
