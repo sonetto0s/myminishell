@@ -11,13 +11,14 @@ void job_init(Job *job)
     if (job == NULL)
         return;
     job->id = 0;
-    job->pid = 0;
+    job->pgid = 0;
     job->Status = JOB_RUNNING;
     memset(job->command, 0, sizeof(job->command));
+    job->processes = NULL;
     job->next = NULL;
 }
 
-int job_add(JobManager *manager,pid_t pid,char *command)
+int job_add(JobManager *manager,pid_t pgid,char *command)
 {
     Job *new_job = malloc(sizeof(Job));
     if (new_job == NULL)
@@ -27,7 +28,7 @@ int job_add(JobManager *manager,pid_t pid,char *command)
     }
     job_init(new_job);
     new_job->id = manager->nextid++;
-    new_job->pid = pid;
+    new_job->pgid = pgid;
     strncpy(new_job->command, command, sizeof(new_job->command) - 1);
     new_job->command[sizeof(new_job->command) - 1] = '\0';
     new_job->next = manager->head;
@@ -50,12 +51,12 @@ void job_list(JobManager *manager)
     }
 }
 
-Job *job_find(JobManager *manager, pid_t pids)
+Job *job_find(JobManager *manager, pid_t pgid)
 {
     Job *current = manager->head;
     while (current)
     {
-        if (current->pid == pids)
+        if (current->pgid == pgid)
             return current;
 
         current = current->next;
@@ -63,13 +64,13 @@ Job *job_find(JobManager *manager, pid_t pids)
     return NULL;
 }
 
-void job_remove(JobManager *manager, pid_t pids)
+void job_remove(JobManager *manager, pid_t pgid)
 {
     Job *current = manager->head;
     Job *prev = NULL;
     while (current)
     {
-        if (current->pid == pids)
+        if (current->pgid == pgid)
         {
             if (prev == NULL)
                 manager->head = current->next;
@@ -97,7 +98,7 @@ void job_reap(JobManager *manager)
     while (current)
     {
         Job *next = current->next;
-        pid_t ret = waitpid(current->pid, &status, WNOHANG);
+        pid_t ret = waitpid(current->pgid, &status, WNOHANG);
         if (ret < 0)
         {
             if (errno != ECHILD)
@@ -105,7 +106,7 @@ void job_reap(JobManager *manager)
                 log_error("waitpid failed");
             }
         }
-        if (ret == current->pid)
+        if (ret == current->pgid)
         {
             if (WIFEXITED(status))
             {

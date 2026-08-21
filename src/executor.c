@@ -92,6 +92,11 @@ int execute_single(Command *com, ShellContext *ctx)
     }
     else if (pid == 0)
     {
+        if (setpgid(0, 0) < 0)
+        {
+            log_error("failed setpgid");
+            _exit(1);
+        }
         if (setredirect(com) != MiniShell_OK)
         {
             log_error("redirect failed");
@@ -99,9 +104,18 @@ int execute_single(Command *com, ShellContext *ctx)
         }
         run_process(com);
     }
+    if (setpgid(pid, pid) < 0)
+    {
+        if (errno != EACCES)
+        {
+            log_error("failed setpgid parents");
+            return MiniShell_ERR_UNKNOWN;
+        }
+    }
     if (com->background)
     {
-        if (job_add(&ctx->jobs, pid, com->argv[0]) < 0)
+        pid_t pgid = pid;
+        if (job_add(&ctx->jobs, pgid, com->argv[0]) < 0)
         {
             log_error("falied add job");
             kill(pid, SIGTERM);
@@ -134,6 +148,7 @@ int execute_pipeline(Command *com)
     int pipe_fd = -1;
     int count = 0;
     pid_t pids[64];
+    pid_t pgid = 0;
     int statuses = 0;
     int last_status = 0;
     while (current)
@@ -163,12 +178,31 @@ int execute_pipeline(Command *com)
         }
         if (pid > 0)
         {
+            if (pgid == 0)
+                pgid = pid;
+            if (setpgid(pid, pgid) < 0)
+            {
+                if (errno != EACCES)
+                {
+                    log_error("failed parent setpgid");
+                }
+            }
             pids[count++] = pid;
         }
 
         if (pid == 0)
         {
-            if (pipe_fd == -1 &&current->next != NULL)
+            pid_t child_pgid;
+            if (child_pgid == 0)
+                child_pgid = getpid();
+            else
+                child_pgid = pgid;
+            if (setpgid(0, child_pgid) < 0)
+            {
+                log_error("failed setpgid child");
+                _exit(1);
+            }
+            if (pipe_fd == -1 && current->next != NULL)
             {
                 if (dup2(pipefd[1], STDOUT_FILENO) == -1)
                 {
@@ -177,38 +211,35 @@ int execute_pipeline(Command *com)
                 }
                 close(pipefd[1]);
                 close(pipefd[0]);
-                
             }
-            else if (pipe_fd != -1 &&current->next != NULL)
-            {
-                if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+                else if (pipe_fd != -1 && current->next != NULL)
                 {
-                    log_error("dup2 failed");
-                    _exit(127);
-                }
+                    if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+                    {
+                        log_error("dup2 failed");
+                        _exit(127);
+                    }
 
-                if (dup2(pipe_fd, STDIN_FILENO) == -1)
-                {
-                    log_error("dup2 failed");
-                    _exit(127);
-                }
-                close(pipefd[0]);
-                close(pipefd[1]);
-               
-            }
-            else if (current->next == NULL)
-            {
-                if (pipe_fd != -1)
-                {
                     if (dup2(pipe_fd, STDIN_FILENO) == -1)
                     {
                         log_error("dup2 failed");
                         _exit(127);
                     }
-                    close(pipe_fd);
+                    close(pipefd[0]);
+                    close(pipefd[1]);
                 }
-               
-            }
+                else if (current->next == NULL)
+                {
+                    if (pipe_fd != -1)
+                    {
+                        if (dup2(pipe_fd, STDIN_FILENO) == -1)
+                        {
+                            log_error("dup2 failed");
+                            _exit(127);
+                        }
+                        close(pipe_fd);
+                    }
+                }
             if (setredirect(current) != MiniShell_OK)
             {
                 log_error("redirect failed");
