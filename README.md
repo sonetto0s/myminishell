@@ -11,9 +11,13 @@
 - 编译工具: Make
 - 编程语言: C
 
-## 当前版本: V1.2
+## 当前版本: V1.3
 
 ## 更新日志
+
+V1.3:
+- 优化工程稳定性
+- 优化job/event/executor/shell/errno层代码
 
 V1.2:
 - 新增system_info模块,识别设备状态
