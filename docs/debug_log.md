@@ -23,18 +23,18 @@ parser.c文件中,parse函数在最后时候忘了写结构体末尾指向NULL,�
 (gdb) print com
 $1 = (Command *) 0x7fffffffdb20
 (gdb) print *com
-$2 = {argc = 1, argv = {0x7fffffffdb80 "ls", 0x555555556004 ">>shell初始化成功\r", 
-    0x7ffff7e045c0 <_IO_2_1_stdout_> "\204*\255", <incomplete sequence \373>, 0xa <error: Cannot access memory at address 0xa>, 
-    0x7ffff7e045c0 <_IO_2_1_stdout_> "\204*\255", <incomplete sequence \373>, 0x7ffff7e046a8 <stdout> "\300E\340\367\377\177", 
-    0x7ffff7e02030 <_IO_file_jumps> "", 0x7fffffffdb90 "\340\333\377\377\377\177", 
-    0x7ffff7c92ef3 <_IO_new_file_overflow+259> "\203\370\377\017\205c\377\377\377\017\037@", 
+$2 = {argc = 1, argv = {0x7fffffffdb80 "ls", 0x555555556004 ">>shell初始化成功\r",
+    0x7ffff7e045c0 <_IO_2_1_stdout_> "\204*\255", <incomplete sequence \373>, 0xa <error: Cannot access memory at address 0xa>,
+    0x7ffff7e045c0 <_IO_2_1_stdout_> "\204*\255", <incomplete sequence \373>, 0x7ffff7e046a8 <stdout> "\300E\340\367\377\177",
+    0x7ffff7e02030 <_IO_file_jumps> "", 0x7fffffffdb90 "\340\333\377\377\377\177",
+    0x7ffff7c92ef3 <_IO_new_file_overflow+259> "\203\370\377\017\205c\377\377\377\017\037@",
     0x555555556004 ">>shell初始化成功\r"}}
 (gdb) print com->argv
-$3 = {0x7fffffffdb80 "ls", 0x555555556004 ">>shell初始化成功\r", 
-  0x7ffff7e045c0 <_IO_2_1_stdout_> "\204*\255", <incomplete sequence \373>, 0xa <error: Cannot access memory at address 0xa>, 
-  0x7ffff7e045c0 <_IO_2_1_stdout_> "\204*\255", <incomplete sequence \373>, 0x7ffff7e046a8 <stdout> "\300E\340\367\377\177", 
-  0x7ffff7e02030 <_IO_file_jumps> "", 0x7fffffffdb90 "\340\333\377\377\377\177", 
-  0x7ffff7c92ef3 <_IO_new_file_overflow+259> "\203\370\377\017\205c\377\377\377\017\037@", 
+$3 = {0x7fffffffdb80 "ls", 0x555555556004 ">>shell初始化成功\r",
+  0x7ffff7e045c0 <_IO_2_1_stdout_> "\204*\255", <incomplete sequence \373>, 0xa <error: Cannot access memory at address 0xa>,
+  0x7ffff7e045c0 <_IO_2_1_stdout_> "\204*\255", <incomplete sequence \373>, 0x7ffff7e046a8 <stdout> "\300E\340\367\377\177",
+  0x7ffff7e02030 <_IO_file_jumps> "", 0x7fffffffdb90 "\340\333\377\377\377\177",
+  0x7ffff7c92ef3 <_IO_new_file_overflow+259> "\203\370\377\017\205c\377\377\377\017\037@",
   0x555555556004 ">>shell初始化成功\r"}
 
 ```
@@ -55,6 +55,10 @@ $3 = {0x7fffffffdb80 "ls", 0x555555556004 ">>shell初始化成功\r",
 ## 随笔(或者说可以算日记)
 
 ```
+- 这调试越来越不想写了,就我一个人调试啥。。。何况现在9成出错都是少打个字母这种的,真写不了一点调试
+
+- 要不以后还是写英文算了,英文比中文看着正式一点
+
 - 我咋又忘了更新README呢
 
 - 哎不是,我咋清楚地记得我写过一条评论了呢,去哪了
@@ -109,7 +113,7 @@ $3 = {0x7fffffffdb80 "ls", 0x555555556004 ">>shell初始化成功\r",
 
 - 画板子这种轮椅玩多了,突然看上代码脑子有种转圈转不起来的感觉.....
 
-- 不好意思啊,从7月7号开始我就不在学校了,就去南宁了,当时是要做一个项目拖了一段时间,这个项目就中途断了一下,结果做完后正好深圳有家公司找到我们实验室的人培训,本来是两个研究生学长要去,最后老师让我也跟着去学习了(画一个很有意思的板子😎),这个项目就接着延期了,一直到今天板子画完了等打板,总算有时间接着做了 
+- 不好意思啊,从7月7号开始我就不在学校了,就去南宁了,当时是要做一个项目拖了一段时间,这个项目就中途断了一下,结果做完后正好深圳有家公司找到我们实验室的人培训,本来是两个研究生学长要去,最后老师让我也跟着去学习了(画一个很有意思的板子😎),这个项目就接着延期了,一直到今天板子画完了等打板,总算有时间接着做了
 
 - 这结构体可真是个尤物啊哈,太好用辣
 

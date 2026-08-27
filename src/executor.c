@@ -1,4 +1,5 @@
 #include "executor.h"
+#include "terminal.h"
 #include "sig.h"
 #include <signal.h>
 #include <sys/types.h>
@@ -114,7 +115,10 @@ int execute_single(Command *com, ShellContext *ctx)
             return MiniShell_ERR_UNKNOWN;
         }
     }
+    if (com->background)
+{
     Job *job = job_add(&ctx->jobs, pid, com->argv[0]);
+
     if (job == NULL)
     {
         log_error("failed add job");
@@ -122,6 +126,7 @@ int execute_single(Command *com, ShellContext *ctx)
         waitpid(pid, NULL, 0);
         return MiniShell_ERR_UNKNOWN;
     }
+
     if (process_add(job, pid) < 0)
     {
         log_error("failed add process");
@@ -130,15 +135,19 @@ int execute_single(Command *com, ShellContext *ctx)
         job_remove(&ctx->jobs, pid);
         return MiniShell_ERR_UNKNOWN;
     }
+
+    return MiniShell_OK;
+}
     if (!com->background)
     {
+        terminal_set_foreground(pid);
         if (waitpid(pid, &status, 0) < 0)
         {
             log_error("failed wait");
             job_remove(&ctx->jobs, pid);
             return MiniShell_ERR_UNKNOWN;
         }
-        job_remove(&ctx->jobs, pid);
+        terminal_restore();
     }
     else
     {

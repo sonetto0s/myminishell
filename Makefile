@@ -40,7 +40,8 @@ APP_SRC := \
 	common/log.c \
 	common/error.c \
 	config/config.c \
-	src/system_info.c
+	src/system_info.c \
+	src/terminal.c
 
 
 
@@ -56,6 +57,7 @@ CORE_SRC := \
 	src/builtin_table.c \
 	src/job.c \
 	src/event.c \
+	src/terminal.c \
 	common/utils.c \
 	common/log.c \
 	common/error.c \
