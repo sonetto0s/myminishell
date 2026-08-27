@@ -114,25 +114,35 @@ int execute_single(Command *com, ShellContext *ctx)
             return MiniShell_ERR_UNKNOWN;
         }
     }
-    if (com->background)
+    Job *job = job_add(&ctx->jobs, pid, com->argv[0]);
+    if (job == NULL)
     {
-        pid_t pgid = pid;
-        Job *job = job_add(&ctx->jobs, pgid, com->argv[0]);
-        if (job == NULL)
+        log_error("failed add job");
+        kill(pid, SIGTERM);
+        waitpid(pid, NULL, 0);
+        return MiniShell_ERR_UNKNOWN;
+    }
+    if (process_add(job, pid) < 0)
+    {
+        log_error("failed add process");
+        kill(pid, SIGTERM);
+        waitpid(pid, NULL, 0);
+        job_remove(&ctx->jobs, pid);
+        return MiniShell_ERR_UNKNOWN;
+    }
+    if (!com->background)
+    {
+        if (waitpid(pid, &status, 0) < 0)
         {
-            log_error("failed add job");
-            kill(pid, SIGTERM);
-            waitpid(pid, NULL, 0);
+            log_error("failed wait");
+            job_remove(&ctx->jobs, pid);
             return MiniShell_ERR_UNKNOWN;
         }
-        process_add(job, pid);
-        return MiniShell_OK;
+        job_remove(&ctx->jobs, pid);
     }
-
-    if (waitpid(pid, &status, 0) < 0)
+    else
     {
-        log_error("failed wait");
-        return MiniShell_ERR_UNKNOWN;
+        return MiniShell_OK;
     }
 
     if (WIFEXITED(status))

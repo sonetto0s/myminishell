@@ -160,7 +160,7 @@ void job_reap(JobManager *manager)
                     process->status = PROCESS_RUNNING;
                 }
             }
-            if (process->status != PROCESS_RUNNING)
+            if (process->status != PROCESS_DONE)
             {
                 done = 0;
             }
