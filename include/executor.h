@@ -4,6 +4,9 @@
 #include "command.h"
 #include "shell_context.h"
 
+#define MAX_PIPELINE 64
+
+
 int execute_command(Command *com, ShellContext *ctx);
 int execute_single(Command *com, ShellContext *ctx);
 int execute_pipeline(Command *com, ShellContext *ctx);

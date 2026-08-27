@@ -6,19 +6,29 @@
 typedef enum
 {
     JOB_RUNNING,
+    JOB_STOPPED,
     JOB_DONE
 } JobStatus;
 
+
+typedef enum
+{
+    PROCESS_RUNNING,
+    PROCESS_STOPPED,
+    PROCESS_DONE
+} ProcessStatus;
+
+
 typedef struct Process{
     pid_t pid;
-    int status;
+    ProcessStatus status;
     struct Process *next;
 } Process;
 
 typedef struct Job{
     int id;
     pid_t pgid;
-    JobStatus Status;
+    JobStatus status;
     char command[128];
     Process *processes;
     struct Job *next;

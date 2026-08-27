@@ -151,14 +151,14 @@ int execute_pipeline(Command *com, ShellContext *ctx)
     Command *current = com;
     int pipe_fd = -1;
     int count = 0;
-    pid_t pids[64];
+    pid_t pids[MAX_PIPELINE];
     pid_t pgid = 0;
     int statuses = 0;
     int last_status = 0;
     while (current)
     {
         int pipefd[2];
-        if (count >= 64)
+        if (count >= MAX_PIPELINE)
         {
             log_error("the pipeline commands are too many?");
             return MiniShell_ERR_UNKNOWN;

@@ -1,10 +1,12 @@
+#include <sys/wait.h>
 #include "job.h"
 #include "log.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/wait.h>
 #include <errno.h>
+#include <sys/types.h>
+
 
 static void process_destroy(Process *process)
 {
@@ -22,7 +24,7 @@ void job_init(Job *job)
         return;
     job->id = 0;
     job->pgid = 0;
-    job->Status = JOB_RUNNING;
+    job->status = JOB_RUNNING;
     memset(job->command, 0, sizeof(job->command));
     job->processes = NULL;
     job->next = NULL;
@@ -52,10 +54,20 @@ void job_list(JobManager *manager)
     while(current)
     {
         printf("[%d] %s\n", current->id, current->command);
-        if (current->Status == JOB_RUNNING)
-            printf("now it is running\n");
-        else
-            printf("now it is done\n");
+        switch(current->status)
+    {
+     case JOB_RUNNING:
+        printf("now it is running\n");
+        break;
+
+     case JOB_STOPPED:
+        printf("now it is stopped\n");
+        break;
+
+     case JOB_DONE:
+        printf("now it is done\n");
+        break;
+    }
 
         current = current->next;
     }
@@ -95,7 +107,7 @@ void job_remove(JobManager *manager, pid_t pgid)
         current = current->next;
     }
 }
- 
+
 void jobmanager_init(JobManager *manager)
 {
     manager->head = NULL;
@@ -109,15 +121,16 @@ void job_reap(JobManager *manager)
     {
         Process *process = job->processes;
         int done = 1;
+        int stopped = 1;
         while (process)
         {
             int status;
-            pid_t ret = waitpid(process->pid, &status, WNOHANG);
+            pid_t ret = waitpid(process->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
             if (ret < 0)
             {
                 if (errno == ECHILD)
                 {
-                    process->status = 1;
+                    process->status = PROCESS_DONE;
                 }
                 else
                 {
@@ -126,25 +139,50 @@ void job_reap(JobManager *manager)
             }
             else if (ret == process->pid)
             {
-                process->status = 1;
+
                 if (WIFEXITED(status))
                 {
+                    process->status = PROCESS_DONE;
                     printf("\n[%d] process %d exit %d\n", job->id, process->pid, WEXITSTATUS(status));
                 }
                 else if (WIFSIGNALED(status))
                 {
+                    process->status = PROCESS_DONE;
                     printf("\n[%d] process %d killed by %d\n", job->id, process->pid, WTERMSIG(status));
                 }
+                else if(WIFSTOPPED(status))
+                {
+                    process->status = PROCESS_STOPPED;
+                    printf("\n[%d] process %d stopped by %d\n", job->id, process->pid, WSTOPSIG(status));
+                }
+                else if(WIFCONTINUED(status))
+                {
+                    process->status = PROCESS_RUNNING;
+                }
             }
-            if (process->status == 0)
+            if (process->status != PROCESS_RUNNING)
             {
                 done = 0;
+            }
+            if (process->status != PROCESS_STOPPED)
+            {
+                stopped = 0;
             }
             process = process->next;
         }
         if (done)
         {
-            job->Status = JOB_DONE;
+            job->status = JOB_DONE;
+        }
+
+        else if (stopped)
+        {
+            job->status = JOB_STOPPED;
+        }
+
+        else
+        {
+            job->status = JOB_RUNNING;
         }
         job = job->next;
     }
@@ -170,7 +208,7 @@ void job_cleanup_done(JobManager *manager)
     Job *prev = NULL;
     while (current)
     {
-        if (current->Status == JOB_DONE)
+        if (current->status == JOB_DONE)
         {
             Job *temp = current;
             if (prev)
@@ -198,7 +236,7 @@ int process_add(Job *job, pid_t pid)
         return -1;
     }
     new_process->pid = pid;
-    new_process->status = 0;
+    new_process->status = PROCESS_RUNNING;
     new_process->next = NULL;
     if (job->processes == NULL)
     {

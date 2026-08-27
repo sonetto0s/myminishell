@@ -12,6 +12,7 @@
 int builtin_cd(Command *cmd, struct ShellContext *ctx)
 {
     (void)ctx;
+
     if (cmd->argc < 2)
     {
         fprintf(stderr, "你cd后面没写东西\r\n");
@@ -43,8 +44,10 @@ int builtin_pwd(Command *cmd, struct ShellContext *ctx)
     }
 }
 
+
 int builtin_exit(Command *cmd, struct ShellContext *ctx)
 {
+
     (void)cmd;
     ctx->running = 0;
     return MiniShell_OK;
