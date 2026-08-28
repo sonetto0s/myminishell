@@ -268,15 +268,17 @@ int job_continue(Job *job)
 {
     if (job == NULL)
     {
+        log_error("jobcontinue: job is NULL");
         return -1;
     }
     if (job->status != JOB_STOPPED)
     {
+        log_error("jobcontinue: job is not stopped");
         return -1;
     }
     if (kill(-job->pgid, SIGCONT) < 0)
     {
-        log_error("failed send SIGCONT");
+        log_error("jobcontinue: failed send SIGCONT");
         return -1;
     }
     job->status = JOB_RUNNING;
@@ -289,5 +291,6 @@ int job_continue(Job *job)
         }
         process = process->next;
     }
+
     return 0;
 }

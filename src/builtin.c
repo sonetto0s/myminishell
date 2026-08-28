@@ -6,6 +6,7 @@
 #include "builtin_table.h"
 #include "system_info.h"
 #include <unistd.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/wait.h>
@@ -100,8 +101,114 @@ int builtin_sysinfo(Command *cmd, struct ShellContext *ctx)
     return MiniShell_OK;
 }
 
-
 int builtin_fg(Command *cmd, struct ShellContext *ctx)
+{
+    (void)cmd;
+    Job *job = ctx->jobs.head;
+    while (job)
+    {
+        if (job->status == JOB_STOPPED)
+        {
+            break;
+        }
+
+        job = job->next;
+    }
+
+    if (job == NULL)
+    {
+        printf("fg: no stopped job\n");
+        return MiniShell_ERR_UNKNOWN;
+    }
+
+    if (terminal_set_foreground(job->pgid) < 0)
+    {
+        log_error("failed set foreground");
+        return MiniShell_ERR_UNKNOWN;
+    }
+
+    if (job_continue(job) < 0)
+    {
+        terminal_restore();
+        return MiniShell_ERR_UNKNOWN;
+    }
+
+    int status;
+    pid_t ret;
+
+    while (1)
+    {
+        ret = waitpid(-job->pgid, &status, WUNTRACED);
+        if (ret < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            log_error("failed wait foreground job");
+            terminal_restore();
+            return MiniShell_ERR_UNKNOWN;
+        }
+        Process *process = job->processes;
+        while (process)
+        {
+            if (process->pid == ret)
+            {
+                if (WIFSTOPPED(status))
+                {
+                    process->status = PROCESS_STOPPED;
+                }
+                else if (WIFEXITED(status) || WIFSIGNALED(status))
+                {
+                    process->status = PROCESS_DONE;
+                }
+                break;
+            }
+
+            process = process->next;
+        }
+        if (WIFSTOPPED(status))
+        {
+            job->status = JOB_STOPPED;
+
+            terminal_restore();
+
+            printf("\n[%d]+ Stopped %s\n", job->id, job->command);
+
+            return MiniShell_OK;
+        }
+        int all_done = 1;
+        process = job->processes;
+        while (process)
+        {
+            if (process->status != PROCESS_DONE)
+            {
+                all_done = 0;
+                break;
+            }
+            process = process->next;
+        }
+
+        if (all_done)
+        {
+            break;
+        }
+    }
+    terminal_restore();
+    job_remove(&ctx->jobs, job->pgid);
+    if (WIFEXITED(status))
+    {
+        return WEXITSTATUS(status);
+    }
+    if (WIFSIGNALED(status))
+    {
+        return 128 + WTERMSIG(status);
+    }
+
+    return MiniShell_ERR_UNKNOWN;
+}
+
+int builtin_bg(Command *cmd, struct ShellContext *ctx)
 {
     (void)cmd;
     Job *job = ctx->jobs.head;
@@ -115,54 +222,14 @@ int builtin_fg(Command *cmd, struct ShellContext *ctx)
     }
     if (job == NULL)
     {
-        printf("fg: no stopped job\n");
-        return MiniShell_ERR_UNKNOWN;
-    }
-    if (terminal_set_foreground(job->pgid) < 0)
-    {
-        log_error("failed set foreground");
+        printf("bg:no stopped job\n");
         return MiniShell_ERR_UNKNOWN;
     }
     if (job_continue(job) < 0)
     {
-        terminal_restore();
+        log_error("failed continue background job");
         return MiniShell_ERR_UNKNOWN;
     }
-    int status;
-    pid_t ret;
-    ret = waitpid(-job->pgid, &status, WUNTRACED);
-    if (ret < 0)
-    {
-        log_error("failed wait foreground job");
-        terminal_restore();
-        return MiniShell_ERR_UNKNOWN;
-    }
-    if (WIFSTOPPED(status))
-    {
-        job->status = JOB_STOPPED;
-        Process *process = job->processes;
-        while (process)
-        {
-            if (process->pid == ret)
-            {
-                process->status = PROCESS_STOPPED;
-                break;
-            }
-            process = process->next;
-        }
-        terminal_restore();
-        printf("\n[%d]+ Stopped %s\n",job->id,job->command);
-        return MiniShell_OK;
-    }
-    terminal_restore();
-    job_remove(&ctx->jobs, job->pgid);
-    if (WIFEXITED(status))
-    {
-        return WEXITSTATUS(status);
-    }
-    if (WIFSIGNALED(status))
-    {
-        return 128 + WTERMSIG(status);
-    }
-    return MiniShell_ERR_UNKNOWN;
+    printf("[%d] %s &\n", job->id, job->command);
+    return MiniShell_OK;
 }
