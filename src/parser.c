@@ -25,7 +25,7 @@ Command *parse_line(char *line,ShellContext *ctx)
         return NULL;
     return build_command(&list,ctx);
 }
- 
+
 void tokenize(char *line,TokenList *list)
 {
     list->count = 0;
@@ -152,7 +152,7 @@ Command *build_command(TokenList *list,ShellContext *ctx)
                i++;
                break;
            case TOKEN_BACKGROUND:
-               current->background = 1;
+               head->background = 1;
                break;
            case TOKEN_PIPE:
                if (i + 1 >= list->count || list->token[i + 1].type != TOKEN_WORD)

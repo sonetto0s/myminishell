@@ -11,6 +11,7 @@ static BuiltinEntry builtin_table[] = {
     {"help", builtin_help},
     {"status", builtin_status},
     {"sysinfo",builtin_sysinfo},
+    {"fg", builtin_fg},
 };
 
 BuiltinEntry *builtin_lookup(const char *name)

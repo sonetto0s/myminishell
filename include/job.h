@@ -49,5 +49,6 @@ void job_reap(JobManager *manager);
 void job_destroy(JobManager *manager);
 void job_cleanup_done(JobManager *manager);
 int process_add(Job *job, pid_t pid);
+int job_continue(Job *job);
 
 #endif

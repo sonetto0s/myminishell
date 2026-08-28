@@ -1,11 +1,14 @@
 #include "builtin.h"
 #include "error.h"
+#include "terminal.h"
+#include "log.h"
 #include "shell_context.h"
 #include "builtin_table.h"
 #include "system_info.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/wait.h>
 #include <string.h>
 #include <sys/utsname.h>
 
@@ -95,4 +98,71 @@ int builtin_sysinfo(Command *cmd, struct ShellContext *ctx)
     }
     system_info_print(&info);
     return MiniShell_OK;
+}
+
+
+int builtin_fg(Command *cmd, struct ShellContext *ctx)
+{
+    (void)cmd;
+    Job *job = ctx->jobs.head;
+    while (job)
+    {
+        if (job->status == JOB_STOPPED)
+        {
+            break;
+        }
+        job = job->next;
+    }
+    if (job == NULL)
+    {
+        printf("fg: no stopped job\n");
+        return MiniShell_ERR_UNKNOWN;
+    }
+    if (terminal_set_foreground(job->pgid) < 0)
+    {
+        log_error("failed set foreground");
+        return MiniShell_ERR_UNKNOWN;
+    }
+    if (job_continue(job) < 0)
+    {
+        terminal_restore();
+        return MiniShell_ERR_UNKNOWN;
+    }
+    int status;
+    pid_t ret;
+    ret = waitpid(-job->pgid, &status, WUNTRACED);
+    if (ret < 0)
+    {
+        log_error("failed wait foreground job");
+        terminal_restore();
+        return MiniShell_ERR_UNKNOWN;
+    }
+    if (WIFSTOPPED(status))
+    {
+        job->status = JOB_STOPPED;
+        Process *process = job->processes;
+        while (process)
+        {
+            if (process->pid == ret)
+            {
+                process->status = PROCESS_STOPPED;
+                break;
+            }
+            process = process->next;
+        }
+        terminal_restore();
+        printf("\n[%d]+ Stopped %s\n",job->id,job->command);
+        return MiniShell_OK;
+    }
+    terminal_restore();
+    job_remove(&ctx->jobs, job->pgid);
+    if (WIFEXITED(status))
+    {
+        return WEXITSTATUS(status);
+    }
+    if (WIFSIGNALED(status))
+    {
+        return 128 + WTERMSIG(status);
+    }
+    return MiniShell_ERR_UNKNOWN;
 }

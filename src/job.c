@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/types.h>
-
+#include <signal.h>
 
 static void process_destroy(Process *process)
 {
@@ -113,17 +113,19 @@ void jobmanager_init(JobManager *manager)
     manager->head = NULL;
     manager->nextid = 1;
 }
-
 void job_reap(JobManager *manager)
 {
     Job *job = manager->head;
     while (job)
     {
         Process *process = job->processes;
-        int done = 1;
-        int stopped = 1;
         while (process)
         {
+            if (process->status != PROCESS_RUNNING)
+            {
+                process = process->next;
+                continue;
+            }
             int status;
             pid_t ret = waitpid(process->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
             if (ret < 0)
@@ -132,54 +134,62 @@ void job_reap(JobManager *manager)
                 {
                     process->status = PROCESS_DONE;
                 }
-                else
+                else if (errno != EINTR)
                 {
                     log_error("failed waitpid");
                 }
             }
             else if (ret == process->pid)
             {
-
                 if (WIFEXITED(status))
                 {
                     process->status = PROCESS_DONE;
+
                     printf("\n[%d] process %d exit %d\n", job->id, process->pid, WEXITSTATUS(status));
                 }
                 else if (WIFSIGNALED(status))
                 {
                     process->status = PROCESS_DONE;
+
                     printf("\n[%d] process %d killed by %d\n", job->id, process->pid, WTERMSIG(status));
                 }
-                else if(WIFSTOPPED(status))
+                else if (WIFSTOPPED(status))
                 {
                     process->status = PROCESS_STOPPED;
+
                     printf("\n[%d] process %d stopped by %d\n", job->id, process->pid, WSTOPSIG(status));
                 }
-                else if(WIFCONTINUED(status))
+                else if (WIFCONTINUED(status))
                 {
                     process->status = PROCESS_RUNNING;
                 }
             }
+
+            process = process->next;
+        }
+        int all_done = 1;
+        int all_stopped = 1;
+        process = job->processes;
+        while (process)
+        {
             if (process->status != PROCESS_DONE)
             {
-                done = 0;
+                all_done = 0;
             }
             if (process->status != PROCESS_STOPPED)
             {
-                stopped = 0;
+                all_stopped = 0;
             }
             process = process->next;
         }
-        if (done)
+        if (all_done)
         {
             job->status = JOB_DONE;
         }
-
-        else if (stopped)
+        else if (all_stopped)
         {
             job->status = JOB_STOPPED;
         }
-
         else
         {
             job->status = JOB_RUNNING;
@@ -254,3 +264,30 @@ int process_add(Job *job, pid_t pid)
     return 0;
 }
 
+int job_continue(Job *job)
+{
+    if (job == NULL)
+    {
+        return -1;
+    }
+    if (job->status != JOB_STOPPED)
+    {
+        return -1;
+    }
+    if (kill(-job->pgid, SIGCONT) < 0)
+    {
+        log_error("failed send SIGCONT");
+        return -1;
+    }
+    job->status = JOB_RUNNING;
+    Process *process = job->processes;
+    while (process)
+    {
+        if (process->status == PROCESS_STOPPED)
+        {
+            process->status = PROCESS_RUNNING;
+        }
+        process = process->next;
+    }
+    return 0;
+}
