@@ -17,25 +17,24 @@ void log_setlevel(Loglevel level)
 
 static void log_write(Loglevel level, const char *format, va_list args)
 {
-    if (level < current_level)
-        return;
+    if (level < current_level) return;
     switch (level)
     {
     case LOG_DEBUG:
-        printf("[DEBUG] ");
+        fprintf(stderr, "[DEBUG] ");
         break;
-    case LOG_INFO:
-        printf("[INFO] ");
-        break;
+        case LOG_INFO:
+            fprintf(stderr, "[INFO] ");
+            break;
     case LOG_ERR:
-        printf("[ERROR] ");
+        fprintf(stderr, "[ERROR] ");
         break;
     default:
-        printf("[UNKNOWN] ");
+        fprintf(stderr, "[UNKNOWN] ");
         break;
     }
-    vprintf(format, args);
-    printf("\n");
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\n");
 }
 
 void log_debug(const char *format, ...)

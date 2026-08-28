@@ -11,9 +11,13 @@
 - 编译工具: Make
 - 编程语言: C
 
-## 当前版本: V1.3
+## 当前版本: V1.4
 
 ## 更新日志
+V1.4:
+- 增加process groups
+- 优化terminal与job contro
+- 增加fg与bg等系统操作功能
 
 V1.3:
 - 优化工程稳定性
@@ -129,7 +133,7 @@ V0.5:
 
 - V0.3:
 - 新增dispatcher骨架,优化原有判断逻辑
-- 新增builtin内建命令解析函数,区分原有execute函数    
+- 新增builtin内建命令解析函数,区分原有execute函数
 
 - V0.2.1:
 - 新增tokenize,取缔原有strtok函数,优化指令解析能力

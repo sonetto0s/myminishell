@@ -18,6 +18,7 @@
 
 ShellStatus shell_init(ShellContext *ctx)
 {
+    setvbuf(stdin, NULL, _IONBF, 0);
     log_init();
     if (terminal_init() < 0)
     {
@@ -112,14 +113,15 @@ ShellStatus shell_run(ShellContext *ctx)
                 ctx->last_exit_status = status;
                 if (status < 0)
                 {
-                    if (status == -EINTR)
-                    {
-                        command_free(cmd_list);
-                        free(line);
-                        prompt = 1;
-                        continue;
-                    }
-                    printf("%s\n", minishell_error_string(status));
+                    // if (status == -EINTR)
+                    // {
+                    //     command_free(cmd_list);
+                    //     free(line);
+                    //     prompt = 1;
+                    //     continue;
+                    // }
+                    // printf("%s\n", minishell_error_string(status));
+                    fprintf(stderr, "%s\n", minishell_error_string(status));
                 }
                 command_free(cmd_list);
             }

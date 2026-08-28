@@ -16,21 +16,25 @@
 int builtin_cd(Command *cmd, struct ShellContext *ctx)
 {
     (void)ctx;
-
-    if (cmd->argc < 2)
-    {
-        fprintf(stderr, "你cd后面没写东西\r\n");
+    if (cmd->argc < 2) {
+        const char *home = getenv("HOME");
+        if (home == NULL) {
+            fprintf(stderr, "cd: HOME not set\n");
+            return MiniShell_ERR_UNKNOWN;
+        }
+        if (chdir(home) == -1) {
+            perror("cd");
+            return MiniShell_ERR_UNKNOWN;
+        }
+        return MiniShell_OK;
+    }
+    if (chdir(cmd->argv[1]) == -1) {
+        perror("cd");
         return MiniShell_ERR_UNKNOWN;
     }
-
-    if (chdir(cmd->argv[1]) == -1)
-    {
-        perror("chdir");
-        return MiniShell_ERR_UNKNOWN;
-    }
-
     return MiniShell_OK;
 }
+
 int builtin_pwd(Command *cmd, struct ShellContext *ctx)
 {
     (void)ctx;
@@ -231,5 +235,24 @@ int builtin_bg(Command *cmd, struct ShellContext *ctx)
         return MiniShell_ERR_UNKNOWN;
     }
     printf("[%d] %s &\n", job->id, job->command);
+    return MiniShell_OK;
+}
+int builtin_reload(Command *cmd, struct ShellContext *ctx)
+{
+    (void)cmd;
+    if (config_load(&ctx->config, ctx->config_file) != MiniShell_OK)
+    {
+        log_error("failed reload config");
+        return MiniShell_ERR_UNKNOWN;
+    }
+    if (ctx->config.debug)
+    {
+        log_setlevel(LOG_DEBUG);
+    }
+    else
+    {
+        log_setlevel(LOG_INFO);
+    }
+    printf("config reloaded\n");
     return MiniShell_OK;
 }

@@ -44,6 +44,8 @@ void signal_reset_child(void)
         perror("sigaction");
     if (sigaction(SIGTSTP, &sasagei, NULL) < 0)
         perror("sigaction");
+    if (sigaction(SIGCHLD, &sasagei, NULL) < 0)
+        perror("sigaction");
 }
 
 static void sigchld_handler(int sig)

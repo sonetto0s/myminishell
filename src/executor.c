@@ -12,6 +12,8 @@
 #include <errno.h>
 #include "error.h"
 #include "log.h"
+#include "event.h"
+
 
 static void run_process(Command *com);
 
@@ -150,15 +152,23 @@ int execute_single(Command *com, ShellContext *ctx)
         log_error("failed give terminal foreground");
     }
 
-
-    if (waitpid(pid, &status, WUNTRACED) < 0)
+    while (1)
     {
-        log_error("failed wait");
-        terminal_restore();
-        job_remove(&ctx->jobs, pid);
-        return MiniShell_ERR_UNKNOWN;
-    }
+        if (waitpid(pid, &status, WUNTRACED) < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
 
+            log_error("failed wait");
+            terminal_restore();
+            job_remove(&ctx->jobs, pid);
+            return MiniShell_ERR_UNKNOWN;
+        }
+
+        break;
+    }
 
     if (WIFSTOPPED(status))
     {
@@ -436,6 +446,7 @@ int execute_pipeline(Command *com, ShellContext *ctx)
 
 static void run_process(Command *com)
 {
+    event_close_in_child();
     signal_reset_child();
     execvp(com->argv[0], com->argv);
     log_error("execute command failed: %s", com->argv[0]);
