@@ -1,38 +1,51 @@
+#include <sys/wait.h>
 #include "job.h"
 #include "log.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/wait.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <signal.h>
+
+static void process_destroy(Process *process)
+{
+    while (process)
+    {
+        Process *next = process->next;
+        free(process);
+        process = next;
+    }
+}
 
 void job_init(Job *job)
 {
     if (job == NULL)
         return;
     job->id = 0;
-    job->pid = 0;
-    job->Status = JOB_RUNNING;
+    job->pgid = 0;
+    job->status = JOB_RUNNING;
     memset(job->command, 0, sizeof(job->command));
+    job->processes = NULL;
     job->next = NULL;
 }
 
-int job_add(JobManager *manager,pid_t pid,char *command)
+Job *job_add(JobManager *manager, pid_t pgid, char *command)
 {
     Job *new_job = malloc(sizeof(Job));
     if (new_job == NULL)
     {
         log_error("malloc job failed");
-        return -1;
+        return NULL;
     }
     job_init(new_job);
     new_job->id = manager->nextid++;
-    new_job->pid = pid;
+    new_job->pgid = pgid;
     strncpy(new_job->command, command, sizeof(new_job->command) - 1);
     new_job->command[sizeof(new_job->command) - 1] = '\0';
     new_job->next = manager->head;
     manager->head = new_job;
-    return 0;
+    return new_job;
 }
 
 void job_list(JobManager *manager)
@@ -41,21 +54,31 @@ void job_list(JobManager *manager)
     while(current)
     {
         printf("[%d] %s\n", current->id, current->command);
-        if (current->Status == JOB_RUNNING)
-            printf("now it is running\n");
-        else
-            printf("now it is done\n");
+        switch(current->status)
+    {
+     case JOB_RUNNING:
+        printf("now it is running\n");
+        break;
+
+     case JOB_STOPPED:
+        printf("now it is stopped\n");
+        break;
+
+     case JOB_DONE:
+        printf("now it is done\n");
+        break;
+    }
 
         current = current->next;
     }
 }
 
-Job *job_find(JobManager *manager, pid_t pids)
+Job *job_find(JobManager *manager, pid_t pgid)
 {
     Job *current = manager->head;
     while (current)
     {
-        if (current->pid == pids)
+        if (current->pgid == pgid)
             return current;
 
         current = current->next;
@@ -63,19 +86,20 @@ Job *job_find(JobManager *manager, pid_t pids)
     return NULL;
 }
 
-void job_remove(JobManager *manager, pid_t pids)
+void job_remove(JobManager *manager, pid_t pgid)
 {
     Job *current = manager->head;
     Job *prev = NULL;
     while (current)
     {
-        if (current->pid == pids)
+        if (current->pgid == pgid)
         {
             if (prev == NULL)
                 manager->head = current->next;
             else
                 prev->next = current->next;
 
+            process_destroy(current->processes);
             free(current);
             return;
         }
@@ -83,43 +107,95 @@ void job_remove(JobManager *manager, pid_t pids)
         current = current->next;
     }
 }
- 
+
 void jobmanager_init(JobManager *manager)
 {
     manager->head = NULL;
     manager->nextid = 1;
 }
-
 void job_reap(JobManager *manager)
 {
-    Job *current = manager->head;
-    int status;
-    while (current)
+    Job *job = manager->head;
+    while (job)
     {
-        Job *next = current->next;
-        pid_t ret = waitpid(current->pid, &status, WNOHANG);
-        if (ret < 0)
+        Process *process = job->processes;
+        while (process)
         {
-            if (errno != ECHILD)
+            if (process->status != PROCESS_RUNNING)
             {
-                log_error("waitpid failed");
+                process = process->next;
+                continue;
             }
+            int status;
+            pid_t ret = waitpid(process->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+            if (ret < 0)
+            {
+                if (errno == ECHILD)
+                {
+                    process->status = PROCESS_DONE;
+                }
+                else if (errno != EINTR)
+                {
+                    log_error("failed waitpid");
+                }
+            }
+            else if (ret == process->pid)
+            {
+                if (WIFEXITED(status))
+                {
+                    process->status = PROCESS_DONE;
+
+                    printf("\n[%d] process %d exit %d\n", job->id, process->pid, WEXITSTATUS(status));
+                }
+                else if (WIFSIGNALED(status))
+                {
+                    process->status = PROCESS_DONE;
+
+                    printf("\n[%d] process %d killed by %d\n", job->id, process->pid, WTERMSIG(status));
+                }
+                else if (WIFSTOPPED(status))
+                {
+                    process->status = PROCESS_STOPPED;
+
+                    printf("\n[%d] process %d stopped by %d\n", job->id, process->pid, WSTOPSIG(status));
+                }
+                else if (WIFCONTINUED(status))
+                {
+                    process->status = PROCESS_RUNNING;
+                }
+            }
+
+            process = process->next;
         }
-        if (ret == current->pid)
+        int all_done = 1;
+        int all_stopped = 1;
+        process = job->processes;
+        while (process)
         {
-            if (WIFEXITED(status))
+            if (process->status != PROCESS_DONE)
             {
-                printf("\n[%d] %s is finished,exit is%d\n", current->id, current->command, WEXITSTATUS(status));
+                all_done = 0;
             }
-            else if (WIFSIGNALED(status))
+            if (process->status != PROCESS_STOPPED)
             {
-                printf("\n[%d] %s is killed by signal %d\n", current->id, current->command, WTERMSIG(status));
+                all_stopped = 0;
             }
-            current->Status = JOB_DONE;
+            process = process->next;
         }
-        current = next;
+        if (all_done)
+        {
+            job->status = JOB_DONE;
+        }
+        else if (all_stopped)
+        {
+            job->status = JOB_STOPPED;
+        }
+        else
+        {
+            job->status = JOB_RUNNING;
+        }
+        job = job->next;
     }
-  
 }
 
 void job_destroy(JobManager *manager)
@@ -128,6 +204,7 @@ void job_destroy(JobManager *manager)
     while (current)
     {
         Job *next = current->next;
+        process_destroy(current->processes);
         free(current);
         current = next;
     }
@@ -141,14 +218,14 @@ void job_cleanup_done(JobManager *manager)
     Job *prev = NULL;
     while (current)
     {
-        if (current->Status == JOB_DONE)
+        if (current->status == JOB_DONE)
         {
             Job *temp = current;
             if (prev)
                 prev->next = current->next;
             else
                 manager->head = current->next;
-
+            process_destroy(temp->processes);
             current = current->next;
             free(temp);
         }
@@ -158,4 +235,62 @@ void job_cleanup_done(JobManager *manager)
             current = current->next;
         }
     }
+}
+
+int process_add(Job *job, pid_t pid)
+{
+    Process *new_process = malloc(sizeof(Process));
+    if (new_process == NULL)
+    {
+        log_error("failed malloc process");
+        return -1;
+    }
+    new_process->pid = pid;
+    new_process->status = PROCESS_RUNNING;
+    new_process->next = NULL;
+    if (job->processes == NULL)
+    {
+        job->processes = new_process;
+    }
+    else
+    {
+        Process *current = job->processes;
+        while (current->next)
+        {
+            current = current->next;
+        }
+        current->next = new_process;
+    }
+    return 0;
+}
+
+int job_continue(Job *job)
+{
+    if (job == NULL)
+    {
+        log_error("jobcontinue: job is NULL");
+        return -1;
+    }
+    if (job->status != JOB_STOPPED)
+    {
+        log_error("jobcontinue: job is not stopped");
+        return -1;
+    }
+    if (kill(-job->pgid, SIGCONT) < 0)
+    {
+        log_error("jobcontinue: failed send SIGCONT");
+        return -1;
+    }
+    job->status = JOB_RUNNING;
+    Process *process = job->processes;
+    while (process)
+    {
+        if (process->status == PROCESS_STOPPED)
+        {
+            process->status = PROCESS_RUNNING;
+        }
+        process = process->next;
+    }
+
+    return 0;
 }

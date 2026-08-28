@@ -1,5 +1,5 @@
 #include "error.h"
-
+#include "errno.h"
 const char *minishell_error_string(MiniShellError error)
 {
     switch(error)

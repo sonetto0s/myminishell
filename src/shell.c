@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <errno.h>
 #include <sys/select.h>
@@ -15,10 +14,16 @@
 #include "job.h"
 #include "log.h"
 #include "error.h"
+#include "terminal.h"
 
 ShellStatus shell_init(ShellContext *ctx)
 {
+    setvbuf(stdin, NULL, _IONBF, 0);
     log_init();
+    if (terminal_init() < 0)
+    {
+        return SHELL_STATUS_ERROR;
+    }
     shell_context_init(ctx);
     if (event_init() < 0)
     {
@@ -51,7 +56,7 @@ ShellStatus shell_run(ShellContext *ctx)
         {
             if (errno == EINTR)
             {
-                prompt = 1;
+                // prompt = 1;
                 continue;
             }
             log_error("select failed");
@@ -70,13 +75,14 @@ ShellStatus shell_run(ShellContext *ctx)
                 log_error("failed read fd");
                 break;
             }
-            if (n == 0)
-            {
-                log_error("fd closed unexpectedly");
-                break;
-            }
+            // if (n == 0)
+            // {
+            //     log_error("fd closed unexpectedly");
+            //     break;
+            // }
             job_reap(&ctx->jobs);
-            prompt = 1;
+            job_cleanup_done(&ctx->jobs);
+            // prompt = 1;
         }
         if (FD_ISSET(STDIN_FILENO, &readfds))
         {
@@ -107,14 +113,15 @@ ShellStatus shell_run(ShellContext *ctx)
                 ctx->last_exit_status = status;
                 if (status < 0)
                 {
-                    if (status == -EINTR)
-                    {
-                        command_free(cmd_list);
-                        free(line);
-                        prompt = 1;
-                        continue;
-                    }
-                    printf("%s\n", minishell_error_string(status));
+                    // if (status == -EINTR)
+                    // {
+                    //     command_free(cmd_list);
+                    //     free(line);
+                    //     prompt = 1;
+                    //     continue;
+                    // }
+                    // printf("%s\n", minishell_error_string(status));
+                    fprintf(stderr, "%s\n", minishell_error_string(status));
                 }
                 command_free(cmd_list);
             }

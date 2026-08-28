@@ -6,14 +6,31 @@
 typedef enum
 {
     JOB_RUNNING,
+    JOB_STOPPED,
     JOB_DONE
 } JobStatus;
 
+
+typedef enum
+{
+    PROCESS_RUNNING,
+    PROCESS_STOPPED,
+    PROCESS_DONE
+} ProcessStatus;
+
+
+typedef struct Process{
+    pid_t pid;
+    ProcessStatus status;
+    struct Process *next;
+} Process;
+
 typedef struct Job{
     int id;
-    pid_t pid;
-    JobStatus Status;
+    pid_t pgid;
+    JobStatus status;
     char command[128];
+    Process *processes;
     struct Job *next;
 }Job;
 
@@ -24,12 +41,14 @@ typedef struct{
 
 void job_init(Job *job);
 void jobmanager_init(JobManager *manager);
-int job_add(JobManager *manager, pid_t pid, char *command);
+Job *job_add(JobManager *manager, pid_t pgid, char *command);
 void job_list(JobManager *manager);
-Job *job_find(JobManager *manager, pid_t pid);
-void job_remove(JobManager *manager, pid_t pids);
+Job *job_find(JobManager *manager, pid_t pgid);
+void job_remove(JobManager *manager, pid_t pgid);
 void job_reap(JobManager *manager);
 void job_destroy(JobManager *manager);
 void job_cleanup_done(JobManager *manager);
+int process_add(Job *job, pid_t pid);
+int job_continue(Job *job);
 
 #endif

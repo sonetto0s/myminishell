@@ -10,7 +10,9 @@ void shell_context_init(ShellContext *ctx)
     ctx->last_exit_status = 0;
     jobmanager_init(&ctx->jobs);
     config_init(&ctx->config);
-    int ret = config_load(&ctx->config, "config/config.conf");
+    strncpy(ctx->config_file, "config/config.conf", sizeof(ctx->config_file) - 1);
+    ctx->config_file[sizeof(ctx->config_file) - 1] = '\0';
+    int ret = config_load(&ctx->config, ctx->config_file);
     if (ret != MiniShell_OK)
     {
         log_info("failed load config");

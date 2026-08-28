@@ -12,5 +12,7 @@ int builtin_help(Command *cmd, struct ShellContext *ctx);
 int builtin_jobs(Command *cmd, struct ShellContext *ctx);
 int builtin_status(Command *cmd, struct ShellContext *ctx);
 int builtin_sysinfo(Command *cmd, struct ShellContext *ctx);
-
+int builtin_fg(Command *cmd, struct ShellContext *ctx);
+int builtin_bg(Command *cmd, struct ShellContext *ctx);
+int builtin_reload(Command *cmd, struct ShellContext *ctx);
 #endif

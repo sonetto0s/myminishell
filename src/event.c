@@ -56,3 +56,17 @@ void event_shut(void)
         event_pipe[1] = -1;
     }
 }
+
+void event_close_in_child(void)
+{
+    if (event_pipe[0] >= 0)
+    {
+        close(event_pipe[0]);
+        event_pipe[0] = -1;
+    }
+    if (event_pipe[1] >= 0)
+    {
+        close(event_pipe[1]);
+        event_pipe[1] = -1;
+    }
+}
