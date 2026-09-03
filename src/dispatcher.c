@@ -76,12 +76,16 @@ static int builtin_apply_redirect(Command *cmd, int *saved_out, int *saved_in)
 }
 static void builtin_restore_redirect(int saved_out, int saved_in)
 {
-    if (saved_out >= 0) {
-        dup2(saved_out, STDOUT_FILENO);
+    if (saved_out >= 0)
+    {
+        if (dup2(saved_out, STDOUT_FILENO) < 0)
+            log_error("failed restore stdout");
         close(saved_out);
     }
-    if (saved_in >= 0) {
-        dup2(saved_in, STDIN_FILENO);
+    if (saved_in >= 0)
+    {
+        if (dup2(saved_in, STDIN_FILENO) < 0)
+            log_error("failed restore stdin");
         close(saved_in);
     }
 }
@@ -97,15 +101,23 @@ int dispatcher_command(Command *cmd, ShellContext *ctx)
         type = CMD_EXTERNAL;
     }
 
-    switch (type) {
-    case CMD_BUILTIN: {
+    switch (type)
+    {
+    case CMD_BUILTIN:
+    {
         int saved_out, saved_in;
         int ret = builtin_apply_redirect(cmd, &saved_out, &saved_in);
-        if (ret != MiniShell_OK) {
+        if (ret != MiniShell_OK)
+        {
             builtin_restore_redirect(saved_out, saved_in);   /* 失败也要恢复，别漏 */
             return ret;
         }
         ret = entry->handler(cmd, ctx);
+
+        if (fflush(stdout) != 0)
+        {
+            log_error("failed flush builtin stdout");
+        }
         builtin_restore_redirect(saved_out, saved_in);
         return ret;
     }

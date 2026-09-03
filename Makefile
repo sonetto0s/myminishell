@@ -68,18 +68,25 @@ TEST_SRC := \
 	$(SRC_DIR)/executor.c \
 	$(SRC_DIR)/dispatcher.c \
 	$(SRC_DIR)/builtin.c \
+	$(TEST_DIR)/test_event.c \
+	$(TEST_DIR)/test_shell_context.c  \
 	$(SRC_DIR)/builtin_table.c \
 	$(SRC_DIR)/command.c \
+	$(TEST_DIR)/test_builtin_table.c \
+	$(TEST_DIR)/test_system_info.c \
+	$(TEST_DIR)/test_dispatcher.c \
 	$(SRC_DIR)/sig.c \
 	$(SRC_DIR)/shell_context.c \
 	$(SRC_DIR)/job.c \
+	$(TEST_DIR)/test_job.c \
 	$(SRC_DIR)/event.c \
 	$(SRC_DIR)/system_info.c \
 	$(SRC_DIR)/terminal.c \
 	$(COMMON_DIR)/utils.c \
 	$(COMMON_DIR)/log.c \
 	$(COMMON_DIR)/error.c \
-	$(CONFIG_DIR)/config.c
+	$(CONFIG_DIR)/config.c \
+	$(TEST_DIR)/test_command.c
 
 APP_OBJ  := $(APP_SRC:%.c=$(BUILD_DIR)/%.o)
 TEST_OBJ := $(TEST_SRC:%.c=$(BUILD_DIR)/%.o)

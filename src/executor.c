@@ -90,6 +90,7 @@ int setredirect(Command *com)
 int execute_single(Command *com, ShellContext *ctx)
 {
     int status;
+    int terminal_active = terminal_is_initialized();
     pid_t pid = fork();
     if (pid < 0)
     {
@@ -145,11 +146,12 @@ int execute_single(Command *com, ShellContext *ctx)
         return MiniShell_OK;
     }
 
-
-
-    if (terminal_set_foreground(pid) < 0)
+    if (terminal_active)
     {
-        log_error("failed give terminal foreground");
+        if (terminal_set_foreground(pid) < 0)
+        {
+            log_error("failed give terminal foreground");
+        }
     }
 
     while (1)
@@ -162,7 +164,10 @@ int execute_single(Command *com, ShellContext *ctx)
             }
 
             log_error("failed wait");
-            terminal_restore();
+
+            if (terminal_active)
+                terminal_restore();
+
             job_remove(&ctx->jobs, pid);
             return MiniShell_ERR_UNKNOWN;
         }
@@ -182,10 +187,10 @@ int execute_single(Command *com, ShellContext *ctx)
         printf("\n[%d]+ Stopped %s\n", job->id, job->command);
         return MiniShell_OK;
     }
-    terminal_restore();
+    if (terminal_active)
+        terminal_restore();
 
     job_remove(&ctx->jobs, pid);
-
     if (WIFEXITED(status))
     {
         return WEXITSTATUS(status);
@@ -204,6 +209,7 @@ int execute_pipeline(Command *com, ShellContext *ctx)
     Command *current = com;
     int pipe_fd = -1;
     int count = 0;
+    int terminal_active = terminal_is_initialized();
     pid_t pids[MAX_PIPELINE];
     pid_t pgid = 0;
     int status = 0;
@@ -342,8 +348,11 @@ int execute_pipeline(Command *com, ShellContext *ctx)
     if (com->background)
         return MiniShell_OK;
 
-    if (terminal_set_foreground(pgid) < 0)
-        log_error("failed set pipeline foreground");
+    if (terminal_active)
+    {
+        if (terminal_set_foreground(pgid) < 0)
+            log_error("failed set pipeline foreground");
+    }
 
     while (1)
     {

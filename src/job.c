@@ -113,6 +113,7 @@ void jobmanager_init(JobManager *manager)
     manager->head = NULL;
     manager->nextid = 1;
 }
+
 void job_reap(JobManager *manager)
 {
     Job *job = manager->head;
@@ -121,13 +122,15 @@ void job_reap(JobManager *manager)
         Process *process = job->processes;
         while (process)
         {
-            if (process->status != PROCESS_RUNNING)
+            if (process->status == PROCESS_DONE)
             {
                 process = process->next;
                 continue;
             }
+
             int status;
             pid_t ret = waitpid(process->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+
             if (ret < 0)
             {
                 if (errno == ECHILD)
@@ -144,19 +147,16 @@ void job_reap(JobManager *manager)
                 if (WIFEXITED(status))
                 {
                     process->status = PROCESS_DONE;
-
                     printf("\n[%d] process %d exit %d\n", job->id, process->pid, WEXITSTATUS(status));
                 }
                 else if (WIFSIGNALED(status))
                 {
                     process->status = PROCESS_DONE;
-
                     printf("\n[%d] process %d killed by %d\n", job->id, process->pid, WTERMSIG(status));
                 }
                 else if (WIFSTOPPED(status))
                 {
                     process->status = PROCESS_STOPPED;
-
                     printf("\n[%d] process %d stopped by %d\n", job->id, process->pid, WSTOPSIG(status));
                 }
                 else if (WIFCONTINUED(status))
@@ -164,9 +164,9 @@ void job_reap(JobManager *manager)
                     process->status = PROCESS_RUNNING;
                 }
             }
-
             process = process->next;
         }
+
         int all_done = 1;
         int all_stopped = 1;
         process = job->processes;
@@ -182,6 +182,7 @@ void job_reap(JobManager *manager)
             }
             process = process->next;
         }
+
         if (all_done)
         {
             job->status = JOB_DONE;
@@ -194,6 +195,7 @@ void job_reap(JobManager *manager)
         {
             job->status = JOB_RUNNING;
         }
+
         job = job->next;
     }
 }
