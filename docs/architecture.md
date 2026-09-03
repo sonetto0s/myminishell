@@ -10,7 +10,7 @@
                      shell_init
                           |
                  初始化ShellContext
-                          |      
+                          |
         |                 |                |
      config              log             signal
         |                 |                |
@@ -66,7 +66,7 @@
 
 后台任务流程:
 
- Command 
+ Command
     |
 job_add
     |
@@ -91,7 +91,7 @@ Error模块统一错误处理
 ```
 
 
-## V1.3  各层模块调用流程
+## V1.4  各层模块调用流程
 ```
 主程序:
 main
@@ -116,16 +116,16 @@ parse_line      (实现字符串的分离解析,转化为字符后存入com结�
 dispatcher_command   (判断输入指令类型)
  |
 built/execute        (实现内部/外部指令执行)
- | 
+ |
 
 
 parser层:
-fgets           (读取输入)    
+fgets           (读取输入)
  |
 trim_line       (分割字符串)
  |
 tokenize        (引入tokenize,分析复杂指令符号,优化输入字符解析)
- |         
+ |
 build_command   (判断复杂指令符号,将结构体填充,传导至parse_line函数)
  |
 parse_line      (实现tokenize和build_command函数调用)
@@ -133,7 +133,7 @@ parse_line      (实现tokenize和build_command函数调用)
 
 dispatcher层:
 dispatcher_command   (实现返回判断指令类型)
- | 
+ |
 builtin/executor     (解析判断内部/外部指令并执行)
 
 
@@ -154,7 +154,7 @@ sigchld_handler/sigint_handler      (优化信号调用逻辑)
 
 shell_context 层:
 shell_status_init                   (初始化shell状态结构体)
-        
+
 
 event 层:
 event_init                          (初始化事件驱动)

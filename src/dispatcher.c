@@ -11,26 +11,19 @@ static int builtin_apply_redirect(Command *cmd, int *saved_out, int *saved_in)
 {
     *saved_out = -1;
     *saved_in = -1;
-
     if (cmd->redirect.output_file)
     {
         int flags = cmd->redirect.append
                         ? (O_WRONLY | O_CREAT | O_APPEND)
                         : (O_WRONLY | O_CREAT | O_TRUNC);
 
-        int fd = open(
-            cmd->redirect.output_file,
-            flags,
-            0644);
-
+        int fd = open(cmd->redirect.output_file,flags,0644);
         if (fd < 0)
         {
             perror("open");
             return MiniShell_ERR_OPEN;
         }
-
         *saved_out = dup(STDOUT_FILENO);
-
         if (*saved_out < 0)
         {
             close(fd);

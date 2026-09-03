@@ -1,16 +1,10 @@
 #include "config.h"
-#include <stdio.h>
+#include "test_framework.h"
 
-void test_config()
+void test_config(void)
 {
     MiniShellConfig config;
     config_init(&config);
-    if (config.debug == 0)
-    {
-        printf("[pass] Config init success\n");
-    }
-    else
-    {
-        printf("[fail] Config init failed\n");
-    }
+    TEST_ASSERT_EQ(config.debug, 0);
 }
+
