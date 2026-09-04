@@ -3,32 +3,27 @@
 
 #include <sys/types.h>
 
-typedef enum
-{
+typedef enum {
     JOB_RUNNING,
     JOB_STOPPED,
     JOB_DONE
 } JobStatus;
 
-
-typedef enum
-{
+typedef enum {
     PROCESS_RUNNING,
     PROCESS_STOPPED,
     PROCESS_DONE
 } ProcessStatus;
 
-
-typedef struct Process
-{
+typedef struct Process {
     pid_t pid;
     ProcessStatus status;
+    int wait_status;
+    int wait_status_valid;
     struct Process *next;
 } Process;
 
-
-typedef struct Job
-{
+typedef struct Job {
     int id;
     pid_t pgid;
     JobStatus status;
@@ -36,7 +31,6 @@ typedef struct Job
     Process *processes;
     struct Job *next;
 } Job;
-
 
 typedef struct
 {
@@ -50,15 +44,15 @@ Job *job_add(JobManager *manager, pid_t pgid, const char *command);
 Job *job_find(JobManager *manager, pid_t pgid);
 int process_add(Job *job, pid_t pid);
 int job_continue(Job *job);
+int job_wait_foreground(Job *job);
+int job_exit_status(const Job *job);
+int job_count_active(const JobManager *manager);
 void job_reap(JobManager *manager);
 void job_cleanup_done(JobManager *manager);
 void job_list(JobManager *manager);
-int job_count_active(const JobManager *manager);
 void job_remove(JobManager *manager, pid_t pgid);
 void job_destroy(JobManager *manager);
 void job_shutdown(JobManager *manager);
 
-
-#endif
-
+#endif 
 

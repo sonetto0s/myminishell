@@ -131,7 +131,7 @@ static int wait_for_pid(pid_t pid, int *status, int timeout_ms)
     int elapsed = 0;
 
     struct timespec delay =
-    {
+  {
         .tv_sec = 0,
         .tv_nsec = 50000000L
     };
@@ -938,5 +938,288 @@ void test_shell_pty_fg(void)
     {
         kill_pty_session(shell_pid, supervisor_pid);
     }
+    close(master_fd);
+}
+
+void test_shell_pty_prompt_ctrl_c(void)
+{
+    int master_fd;
+    pid_t supervisor_pid;
+    pid_t shell_pid;
+
+    int ret = start_pty_shell(&master_fd, &supervisor_pid, &shell_pid);
+    TEST_ASSERT_EQ(ret, 0);
+    if (ret != 0) return;
+
+    ret = wait_for_text(master_fd, ">>MiniShell ", 2000);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = write_control(master_fd, 3);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = wait_for_text(master_fd, ">>MiniShell ", 2000);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = write_all(master_fd, "echo alive\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        ret = wait_for_prompt_with_text(master_fd, "alive", 2000);
+    }
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    ret = write_all(master_fd, "exit\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        ret = wait_for_text(master_fd, ">>MiniShell 已退出", 2000);
+    }
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    int status = 0;
+    ret = wait_for_pid(supervisor_pid, &status, 2000);
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        TEST_ASSERT(WIFEXITED(status));
+        TEST_ASSERT_EQ(WEXITSTATUS(status), 0);
+    } else {
+        kill_pty_session(shell_pid, supervisor_pid);
+    }
+
+    close(master_fd);
+}
+
+void test_shell_pty_pipeline_ctrl_z_fg(void)
+{
+    int master_fd;
+    pid_t supervisor_pid;
+    pid_t shell_pid;
+
+    int ret = start_pty_shell(&master_fd, &supervisor_pid, &shell_pid);
+    TEST_ASSERT_EQ(ret, 0);
+    if (ret != 0) return;
+
+    ret = wait_for_text(master_fd, ">>MiniShell ", 2000);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = write_all(master_fd, "sleep 10 | sleep 10\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    struct timespec delay = {
+        .tv_sec = 0,
+        .tv_nsec = 200000000L
+    };
+
+    nanosleep(&delay, NULL);
+
+    ret = write_control(master_fd, 26);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = wait_for_text(master_fd, ">>MiniShell ", 2000);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = write_all(master_fd, "jobs\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        ret = wait_for_prompt_with_text(master_fd, "now it is stopped", 2000);
+    }
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = write_all(master_fd, "fg\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = wait_for_text(master_fd, ">>MiniShell ", 300);
+    TEST_ASSERT_EQ(ret, -1);
+
+    if (ret == 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    nanosleep(&delay, NULL);
+
+    ret = write_control(master_fd, 3);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        ret = wait_for_text(master_fd, ">>MiniShell ", 2000);
+    }
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = write_all(master_fd, "jobs\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    char output[4096];
+
+    if (ret == 0) {
+        ret = read_until_text(master_fd, ">>MiniShell ", output, sizeof(output), 2000);
+    }
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        TEST_ASSERT(strstr(output, "now it is running") == NULL &&
+                    strstr(output, "now it is stopped") == NULL);
+    }
+
+    ret = write_all(master_fd, "exit\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        ret = wait_for_text(master_fd, ">>MiniShell 已退出", 2000);
+    }
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    int status = 0;
+    ret = wait_for_pid(supervisor_pid, &status, 2000);
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        TEST_ASSERT(WIFEXITED(status));
+        TEST_ASSERT_EQ(WEXITSTATUS(status), 0);
+    } else {
+        kill_pty_session(shell_pid, supervisor_pid);
+    }
+
+    close(master_fd);
+}
+
+void test_shell_pty_background_tty_stop(void)
+{
+    int master_fd;
+    pid_t supervisor_pid;
+    pid_t shell_pid;
+
+    int ret = start_pty_shell(&master_fd, &supervisor_pid, &shell_pid);
+    TEST_ASSERT_EQ(ret, 0);
+    if (ret != 0) return;
+
+    ret = wait_for_text(master_fd, ">>MiniShell ", 2000);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = write_all(master_fd, "cat &\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = wait_for_text(master_fd, "stopped by 21", 2000);
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0) {
+        kill_pty_session(shell_pid, supervisor_pid);
+        close(master_fd);
+        return;
+    }
+
+    ret = write_all(master_fd, "jobs\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        ret = wait_for_prompt_with_text(master_fd, "now it is stopped", 2000);
+    }
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    ret = write_all(master_fd, "exit\n");
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        ret = wait_for_text(master_fd, ">>MiniShell 已退出", 2000);
+    }
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    int status = 0;
+    ret = wait_for_pid(supervisor_pid, &status, 2000);
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret == 0) {
+        TEST_ASSERT(WIFEXITED(status));
+        TEST_ASSERT_EQ(WEXITSTATUS(status), 0);
+    } else {
+        kill_pty_session(shell_pid, supervisor_pid);
+    }
+
     close(master_fd);
 }

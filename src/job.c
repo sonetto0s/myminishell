@@ -22,6 +22,22 @@ static void process_destroy(Process *process)
     }
 }
 
+static Process *process_find(Job *job, pid_t pid)
+{
+    if (!job || pid <= 0)
+        return NULL;
+
+    Process *process = job->processes;
+
+    while (process)
+    {
+        if (process->pid == pid)
+            return process;
+        process = process->next;
+    }
+    return NULL;
+}
+
 static void job_update_status(Job *job)
 {
     if (!job || !job->processes)
@@ -30,6 +46,7 @@ static void job_update_status(Job *job)
     int has_running = 0;
     int has_stopped = 0;
     Process *process = job->processes;
+
     while (process)
     {
         if (process->status == PROCESS_RUNNING)
@@ -39,12 +56,45 @@ static void job_update_status(Job *job)
         process = process->next;
     }
 
-    if (has_running)
-        job->status = JOB_RUNNING;
-    else if (has_stopped)
-        job->status = JOB_STOPPED;
-    else
-        job->status = JOB_DONE;
+    if (has_running) job->status = JOB_RUNNING;
+    else if (has_stopped) job->status = JOB_STOPPED;
+    else job->status = JOB_DONE;
+}
+
+static void process_apply_wait_status(Process *process, int status)
+{
+    if (!process) return;
+
+    process->wait_status = status;
+    process->wait_status_valid = 1;
+
+    if (WIFEXITED(status) || WIFSIGNALED(status)) {
+        process->status = PROCESS_DONE;
+    } else if (WIFSTOPPED(status)) {
+        process->status = PROCESS_STOPPED;
+    } else if (WIFCONTINUED(status)) {
+        process->status = PROCESS_RUNNING;
+    }
+}
+
+// static void job_apply_wait_status(Job *job, pid_t pid, int status)
+// {
+//     Process *process = process_find(job, pid);
+//     if (!process) return;
+
+//     process_apply_wait_status(process, status);
+//     job_update_status(job);
+// }
+
+static Process *job_last_process(const Job *job)
+{
+    if (!job || !job->processes) return NULL;
+
+    Process *process = job->processes;
+
+    while (process->next) process = process->next;
+
+    return process;
 }
 
 static void shutdown_sleep(void)
@@ -54,36 +104,29 @@ static void shutdown_sleep(void)
         .tv_nsec = JOB_SHUTDOWN_WAIT_NS
     };
 
-    while (nanosleep(&ts, &ts) < 0)
-    {
-        if (errno != EINTR)
-            break;
+    while (nanosleep(&ts, &ts) < 0) {
+        if (errno != EINTR) break;
     }
 }
 
 static int process_try_reap(Process *process)
 {
-    if (!process || process->status == PROCESS_DONE)
-        return 1;
+    if (!process || process->status == PROCESS_DONE) return 1;
+
     int status = 0;
 
-    while (1)
-    {
+    while (1) {
         pid_t ret = waitpid(process->pid, &status, WNOHANG);
 
-        if (ret == process->pid)
-        {
-            process->status = PROCESS_DONE;
+        if (ret == process->pid) {
+            process_apply_wait_status(process, status);
             return 1;
         }
 
-        if (ret == 0)
-            return 0;
-        if (errno == EINTR)
-            continue;
+        if (ret == 0) return 0;
+        if (errno == EINTR) continue;
 
-        if (errno == ECHILD)
-        {
+        if (errno == ECHILD) {
             process->status = PROCESS_DONE;
             return 1;
         }
@@ -95,50 +138,41 @@ static int process_try_reap(Process *process)
 
 static void process_force_reap(Process *process)
 {
-    if (!process || process->status == PROCESS_DONE)
-        return;
+    if (!process || process->status == PROCESS_DONE) return;
 
-    while (1)
-    {
-        pid_t ret = waitpid(process->pid, NULL, 0);
+    while (1) {
+        int status = 0;
+        pid_t ret = waitpid(process->pid, &status, 0);
 
-        if (ret == process->pid)
-        {
+        if (ret == process->pid) {
+            process_apply_wait_status(process, status);
+            return;
+        }
+
+        if (ret < 0 && errno == EINTR) continue;
+
+        if (ret < 0 && errno == ECHILD) {
             process->status = PROCESS_DONE;
             return;
         }
 
-        if (ret < 0 &&errno == EINTR)
-            continue;
-
-        if (ret < 0 &&errno == ECHILD)
-        {
-            process->status = PROCESS_DONE;
-            return;
-        }
-
-        if (ret < 0)
-            log_error("failed wait process %d during shutdown", process->pid);
+        if (ret < 0) log_error("failed wait process %d during shutdown", process->pid);
         return;
     }
 }
 
 static int jobmanager_try_reap_all(JobManager *manager)
 {
-    if (!manager)
-        return 1;
+    if (!manager) return 1;
 
     int all_done = 1;
     Job *job = manager->head;
 
-    while (job)
-    {
+    while (job) {
         Process *process = job->processes;
 
-        while (process)
-        {
-            if (!process_try_reap(process))
-                all_done = 0;
+        while (process) {
+            if (!process_try_reap(process)) all_done = 0;
             process = process->next;
         }
 
@@ -155,12 +189,9 @@ static void signal_job_processes(Job *job, int sig)
 
     Process *process = job->processes;
 
-    while (process)
-    {
-        if (process->status != PROCESS_DONE)
-        {
-            if (kill(process->pid, sig) < 0 && errno != ESRCH)
-            {
+    while (process) {
+        if (process->status != PROCESS_DONE) {
+            if (kill(process->pid, sig) < 0 && errno != ESRCH) {
                 log_error("failed send signal %d to process %d", sig, process->pid);
             }
         }
@@ -173,28 +204,16 @@ static void continue_stopped_job(Job *job)
 {
     if (!job) return;
 
-    if (job->pgid > 0)
-    {
-        if (kill(-job->pgid, SIGCONT) < 0 && errno != ESRCH)
-        {
+    if (job->pgid > 0) {
+        if (kill(-job->pgid, SIGCONT) < 0 && errno != ESRCH) {
             log_error("failed continue job %d during shutdown", job->id);
         }
     }
 
     Process *process = job->processes;
 
-    while (process)
-    {
-        if (process->status == PROCESS_STOPPED)
-        {
-            if (kill(process->pid, SIGCONT) < 0 && errno != ESRCH)
-            {
-                log_error("failed continue process %d during shutdown", process->pid);
-            }
-
-            process->status = PROCESS_RUNNING;
-        }
-
+    while (process) {
+        if (process->status == PROCESS_STOPPED) process->status = PROCESS_RUNNING;
         process = process->next;
     }
 
@@ -203,8 +222,8 @@ static void continue_stopped_job(Job *job)
 
 void job_init(Job *job)
 {
-    if (!job)
-        return;
+    if (!job) return;
+
     job->id = 0;
     job->pgid = 0;
     job->status = JOB_RUNNING;
@@ -216,29 +235,33 @@ void job_init(Job *job)
 void jobmanager_init(JobManager *manager)
 {
     if (!manager) return;
+
     manager->head = NULL;
     manager->nextid = 1;
 }
 
 Job *job_add(JobManager *manager, pid_t pgid, const char *command)
 {
-    if (!manager || pgid <= 0 || !command)
-    {
+    if (!manager || pgid <= 0 || !command) {
         log_error("job_add: invalid argument");
         return NULL;
     }
 
     Job *job = malloc(sizeof(Job));
-    if (!job)
-    {
+
+    if (!job) {
         log_error("failed malloc job");
         return NULL;
     }
+
     job_init(job);
+
     job->id = manager->nextid++;
     job->pgid = pgid;
+
     strncpy(job->command, command, sizeof(job->command) - 1);
     job->command[sizeof(job->command) - 1] = '\0';
+
     job->next = manager->head;
     manager->head = job;
 
@@ -248,67 +271,63 @@ Job *job_add(JobManager *manager, pid_t pgid, const char *command)
 Job *job_find(JobManager *manager, pid_t pgid)
 {
     if (!manager || pgid <= 0) return NULL;
+
     Job *job = manager->head;
 
-    while (job)
-    {
+    while (job) {
         if (job->pgid == pgid) return job;
         job = job->next;
     }
+
     return NULL;
 }
 
 int process_add(Job *job, pid_t pid)
 {
-    if (!job || pid <= 0)
-    {
+    if (!job || pid <= 0) {
         log_error("process_add: invalid argument");
         return -1;
     }
 
     Process *process = malloc(sizeof(Process));
-    if (!process)
-    {
+
+    if (!process) {
         log_error("failed malloc process");
         return -1;
     }
+
     process->pid = pid;
     process->status = PROCESS_RUNNING;
+    process->wait_status = 0;
+    process->wait_status_valid = 0;
     process->next = NULL;
 
-    if (!job->processes)
-    {
+    if (!job->processes) {
         job->processes = process;
         return 0;
     }
 
     Process *current = job->processes;
+
     while (current->next) current = current->next;
+
     current->next = process;
+
     return 0;
 }
 
 void job_list(JobManager *manager)
 {
     if (!manager) return;
+
     Job *job = manager->head;
 
-    while (job)
-    {
+    while (job) {
         printf("[%d] %s\n", job->id, job->command);
 
-        switch (job->status)
-        {
-        case JOB_RUNNING:
-            printf("now it is running\n");
-            break;
-        case JOB_STOPPED:
-            printf("now it is stopped\n");
-            break;
-        case JOB_DONE:
-            printf("now it is done\n");
-            break;
-        }
+        if (job->status == JOB_RUNNING) printf("now it is running\n");
+        else if (job->status == JOB_STOPPED) printf("now it is stopped\n");
+        else if (job->status == JOB_DONE) printf("now it is done\n");
 
         job = job->next;
     }
@@ -317,54 +336,103 @@ void job_list(JobManager *manager)
 int job_count_active(const JobManager *manager)
 {
     if (!manager) return 0;
+
     int count = 0;
     const Job *job = manager->head;
 
-    while (job)
-    {
-        if (job->status == JOB_RUNNING || job->status == JOB_STOPPED)
-            count++;
+    while (job) {
+        if (job->status == JOB_RUNNING || job->status == JOB_STOPPED) count++;
         job = job->next;
     }
+
     return count;
 }
 
-void job_remove(JobManager *manager, pid_t pgid)
+int job_continue(Job *job)
 {
-    if (!manager || pgid <= 0) return;
-    Job *current = manager->head;
-    Job *prev = NULL;
-    while (current)
-    {
-        if (current->pgid == pgid)
-        {
-            if (!prev)
-                manager->head = current->next;
-            else
-                prev->next = current->next;
+    if (!job || job->pgid <= 0) {
+        log_error("job_continue: invalid job");
+        return -1;
+    }
 
-            process_destroy(current->processes);
-            free(current);
-            return;
+    if (job->status != JOB_STOPPED) {
+        log_error("job_continue: job is not stopped");
+        return -1;
+    }
+
+    while (kill(-job->pgid, SIGCONT) < 0) {
+        if (errno == EINTR) continue;
+
+        log_error("job_continue: failed send SIGCONT");
+        return -1;
+    }
+
+    Process *process = job->processes;
+
+    while (process) {
+        if (process->status == PROCESS_STOPPED) process->status = PROCESS_RUNNING;
+        process = process->next;
+    }
+
+    job_update_status(job);
+
+    return 0;
+}
+
+int job_wait_foreground(Job *job)
+{
+    if (!job || job->pgid <= 0) return -1;
+
+    while (job->status == JOB_RUNNING) {
+        int status = 0;
+        pid_t pid = waitpid(-job->pgid, &status, WUNTRACED);
+
+        if (pid < 0) {
+            if (errno == EINTR) continue;
+
+            log_error("failed wait foreground job");
+            return -1;
         }
 
-        prev = current;
-        current = current->next;
+        Process *process = process_find(job, pid);
+
+        if (!process) {
+            log_error("foreground process not found in job");
+            return -1;
+        }
+
+        process_apply_wait_status(process, status);
+        job_update_status(job);
     }
+
+    return 0;
+}
+
+int job_exit_status(const Job *job)
+{
+    Process *process = job_last_process(job);
+
+    if (!process || !process->wait_status_valid) return -1;
+
+    int status = process->wait_status;
+
+    if (WIFEXITED(status)) return WEXITSTATUS(status);
+    if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
+
+    return -1;
 }
 
 void job_reap(JobManager *manager)
 {
     if (!manager) return;
+
     Job *job = manager->head;
-    while (job)
-    {
+
+    while (job) {
         Process *process = job->processes;
 
-        while (process)
-        {
-            if (process->status == PROCESS_DONE)
-            {
+        while (process) {
+            if (process->status == PROCESS_DONE) {
                 process = process->next;
                 continue;
             }
@@ -373,31 +441,20 @@ void job_reap(JobManager *manager)
             pid_t ret = waitpid(process->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
 
             if (ret < 0) {
-                if (errno == ECHILD)
+                if (errno == ECHILD) {
                     process->status = PROCESS_DONE;
-                else if (errno != EINTR)
+                } else if (errno != EINTR) {
                     log_error("failed waitpid process %d", process->pid);
-            }
-            else if (ret == process->pid)
-            {
-                if (WIFEXITED(status))
-                {
-                    process->status = PROCESS_DONE;
+                }
+            } else if (ret == process->pid) {
+                process_apply_wait_status(process, status);
+
+                if (WIFEXITED(status)) {
                     printf("\n[%d] process %d exit %d\n", job->id, process->pid, WEXITSTATUS(status));
-                }
-                else if (WIFSIGNALED(status))
-                {
-                    process->status = PROCESS_DONE;
+                } else if (WIFSIGNALED(status)) {
                     printf("\n[%d] process %d killed by %d\n", job->id, process->pid, WTERMSIG(status));
-                }
-                else if (WIFSTOPPED(status))
-                {
-                    process->status = PROCESS_STOPPED;
+                } else if (WIFSTOPPED(status)) {
                     printf("\n[%d] process %d stopped by %d\n", job->id, process->pid, WSTOPSIG(status));
-                }
-                else if (WIFCONTINUED(status))
-                {
-                    process->status = PROCESS_RUNNING;
                 }
             }
 
@@ -411,16 +468,13 @@ void job_reap(JobManager *manager)
 
 void job_cleanup_done(JobManager *manager)
 {
-    if (!manager)
-        return;
+    if (!manager) return;
 
     Job *current = manager->head;
     Job *prev = NULL;
 
-    while (current)
-    {
-        if (current->status == JOB_DONE)
-        {
+    while (current) {
+        if (current->status == JOB_DONE) {
             Job *next = current->next;
 
             if (!prev) manager->head = next;
@@ -429,57 +483,42 @@ void job_cleanup_done(JobManager *manager)
             process_destroy(current->processes);
             free(current);
             current = next;
-        }
-        else
-         {
+        } else {
             prev = current;
             current = current->next;
         }
     }
 }
 
-int job_continue(Job *job)
+void job_remove(JobManager *manager, pid_t pgid)
 {
-    if (!job || job->pgid <= 0)
-    {
-        log_error("job_continue: invalid job");
-        return -1;
+    if (!manager || pgid <= 0) return;
+
+    Job *current = manager->head;
+    Job *prev = NULL;
+
+    while (current) {
+        if (current->pgid == pgid) {
+            if (!prev) manager->head = current->next;
+            else prev->next = current->next;
+
+            process_destroy(current->processes);
+            free(current);
+            return;
+        }
+
+        prev = current;
+        current = current->next;
     }
-
-    if (job->status != JOB_STOPPED)
-    {
-        log_error("job_continue: job is not stopped");
-        return -1;
-    }
-
-    if (kill(-job->pgid, SIGCONT) < 0)
-    {
-        log_error("job_continue: failed send SIGCONT");
-        return -1;
-    }
-
-    Process *process = job->processes;
-
-    while (process)
-    {
-        if (process->status == PROCESS_STOPPED)
-            process->status = PROCESS_RUNNING;
-        process = process->next;
-    }
-
-    job_update_status(job);
-    return 0;
 }
 
 void job_destroy(JobManager *manager)
 {
-    if (!manager)
-        return;
+    if (!manager) return;
 
     Job *job = manager->head;
 
-    while (job)
-    {
+    while (job) {
         Job *next = job->next;
         process_destroy(job->processes);
         free(job);
@@ -494,60 +533,51 @@ void job_shutdown(JobManager *manager)
 {
     if (!manager) return;
 
-    if (!manager->head)
-    {
+    if (!manager->head) {
         manager->nextid = 1;
         return;
     }
 
     Job *job = manager->head;
 
-    while (job)
-    {
-        if (job->status == JOB_STOPPED)
-            continue_stopped_job(job);
+    while (job) {
+        if (job->status == JOB_STOPPED) continue_stopped_job(job);
         job = job->next;
     }
 
     job = manager->head;
 
-    while (job)
-    {
-        if (job->status != JOB_DONE)
-        {
-            if (job->pgid > 0)
-             {
-                if (kill(-job->pgid, SIGTERM) < 0 && errno != ESRCH)
-                {
+    while (job) {
+        if (job->status != JOB_DONE) {
+            if (job->pgid > 0) {
+                if (kill(-job->pgid, SIGTERM) < 0 && errno != ESRCH) {
                     log_error("failed terminate job %d during shutdown", job->id);
                 }
             }
+
             signal_job_processes(job, SIGTERM);
         }
 
         job = job->next;
     }
 
-    for (int i = 0; i < JOB_SHUTDOWN_RETRY_COUNT; i++)
-    {
-        if (jobmanager_try_reap_all(manager))
-            break;
+    for (int i = 0; i < JOB_SHUTDOWN_RETRY_COUNT; i++) {
+        if (jobmanager_try_reap_all(manager)) break;
         shutdown_sleep();
     }
 
     job = manager->head;
 
-    while (job)
-    {
+    while (job) {
         Process *process = job->processes;
-        while (process)
-        {
+
+        while (process) {
             if (!process_try_reap(process)) {
-                if (kill(process->pid, SIGKILL) < 0 && errno != ESRCH)
-                {
+                if (kill(process->pid, SIGKILL) < 0 && errno != ESRCH) {
                     log_error("failed kill process %d during shutdown", process->pid);
                 }
             }
+
             process = process->next;
         }
 
@@ -556,11 +586,10 @@ void job_shutdown(JobManager *manager)
 
     job = manager->head;
 
-    while (job)
-    {
+    while (job) {
         Process *process = job->processes;
-        while (process)
-        {
+
+        while (process) {
             process_force_reap(process);
             process = process->next;
         }
@@ -571,9 +600,6 @@ void job_shutdown(JobManager *manager)
 
     job_destroy(manager);
 }
-
-
-
 
 
 

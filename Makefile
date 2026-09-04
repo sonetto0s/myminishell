@@ -111,6 +111,7 @@ TEST_SRC := \
 	$(SRC_DIR)/terminal.c \
 	$(COMMON_DIR)/utils.c \
 	$(COMMON_DIR)/log.c \
+	$(TEST_DIR)/test_job_control.c \
 	$(COMMON_DIR)/error.c \
 	$(CONFIG_DIR)/config.c
 

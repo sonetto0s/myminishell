@@ -13,6 +13,7 @@ void test_shell_builtin_redirect_restore_failure(void);
 void test_shell_external_redirect_failure(void);
 void test_shell_pipeline_two_commands(void);
 void test_shell_pipeline_three_commands(void);
+void test_shell_pipeline_last_status(void);
 void test_shell_exit_status_success(void);
 void test_shell_exit_status_failure(void);
 void test_shell_background_basic(void);
@@ -24,6 +25,9 @@ void test_shell_pty_ctrl_c(void);
 void test_shell_pty_ctrl_z(void);
 void test_shell_pty_bg(void);
 void test_shell_pty_fg(void);
+void test_shell_pty_prompt_ctrl_c(void);
+void test_shell_pty_pipeline_ctrl_z_fg(void);
+void test_shell_pty_background_tty_stop(void);
 
 int main(void)
 {
@@ -41,6 +45,7 @@ int main(void)
         {"shell_external_redirect_failure", test_shell_external_redirect_failure},
         {"shell_pipeline_two_commands", test_shell_pipeline_two_commands},
         {"shell_pipeline_three_commands", test_shell_pipeline_three_commands},
+        {"shell_pipeline_last_status", test_shell_pipeline_last_status},
         {"shell_exit_status_success", test_shell_exit_status_success},
         {"shell_exit_status_failure", test_shell_exit_status_failure},
         {"shell_background_basic", test_shell_background_basic},
@@ -52,6 +57,9 @@ int main(void)
         {"shell_pty_ctrl_z", test_shell_pty_ctrl_z},
         {"shell_pty_bg", test_shell_pty_bg},
         {"shell_pty_fg", test_shell_pty_fg},
+        {"shell_pty_prompt_ctrl_c", test_shell_pty_prompt_ctrl_c},
+        {"shell_pty_pipeline_ctrl_z_fg", test_shell_pty_pipeline_ctrl_z_fg},
+        {"shell_pty_background_tty_stop", test_shell_pty_background_tty_stop},
     };
 
     printf("======= MiniShell Integration Test =======\n");
@@ -61,3 +69,5 @@ int main(void)
 
     return test_result();
 }
+
+
