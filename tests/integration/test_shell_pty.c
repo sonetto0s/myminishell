@@ -12,7 +12,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#define MINISHELL_PATH "./build/default/minishell"
+static const char *minishell_path(void)
+{
+    const char *path = getenv("MINISHELL_TEST_BIN");
+
+    if (path && *path) return path;
+
+    return "./build/default/minishell";
+}
 
 static int read_until_text(int fd, const char *target, char *output, size_t output_size, int timeout_ms)
 {
@@ -264,7 +271,7 @@ static int start_pty_shell(int *master_fd, pid_t *supervisor_pid, pid_t *shell_p
             if (slave > STDERR_FILENO)
                 close(slave);
 
-            execl(MINISHELL_PATH, "minishell", (char *)NULL);
+           execl(minishell_path(), "minishell", (char *)NULL);
             _exit(127);
         }
 

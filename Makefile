@@ -1,18 +1,5 @@
-# ==============================================================================
-# MiniShell Makefile
-# ==============================================================================
-
-
-# ------------------------------------------------------------------------------
-# Toolchain
-# ------------------------------------------------------------------------------
-
 CC ?= gcc
-
-
-# ------------------------------------------------------------------------------
-# Common compile / link flags
-# ------------------------------------------------------------------------------
+VALGRIND ?= valgrind
 
 COMMON_CFLAGS := \
 	-std=c11 \
@@ -27,35 +14,27 @@ CPPFLAGS_COMMON := \
 	-D_POSIX_C_SOURCE=200809L
 
 LDFLAGS ?=
-LDLIBS  ?=
+LDLIBS ?=
 
+VALGRIND_FLAGS := \
+	--leak-check=full \
+	--show-leak-kinds=all \
+	--track-origins=yes \
+	--track-fds=yes \
+	--error-exitcode=99
 
-# ------------------------------------------------------------------------------
-# Directories
-# ------------------------------------------------------------------------------
-
-SRC_DIR         := src
-TEST_DIR        := tests
+SRC_DIR := src
+TEST_DIR := tests
 INTEGRATION_DIR := $(TEST_DIR)/integration
-COMMON_DIR      := common
-CONFIG_DIR      := config
+COMMON_DIR := common
+CONFIG_DIR := config
 
 BUILD_DIR ?= build/default
 
-
-# ------------------------------------------------------------------------------
-# Output targets
-# ------------------------------------------------------------------------------
-
-TARGET             := $(BUILD_DIR)/minishell
-RUN_TARGET         := shell
-TEST_TARGET        := $(BUILD_DIR)/minishell_tests
+TARGET := $(BUILD_DIR)/minishell
+RUN_TARGET := shell
+TEST_TARGET := $(BUILD_DIR)/minishell_tests
 INTEGRATION_TARGET := $(BUILD_DIR)/minishell_integration_tests
-
-
-# ------------------------------------------------------------------------------
-# Production sources
-# ------------------------------------------------------------------------------
 
 APP_SRC := \
 	$(SRC_DIR)/main.c \
@@ -77,11 +56,6 @@ APP_SRC := \
 	$(COMMON_DIR)/error.c \
 	$(CONFIG_DIR)/config.c
 
-
-# ------------------------------------------------------------------------------
-# Unit-test sources
-# ------------------------------------------------------------------------------
-
 TEST_SRC := \
 	$(TEST_DIR)/test_main.c \
 	$(TEST_DIR)/test_framework.c \
@@ -95,6 +69,7 @@ TEST_SRC := \
 	$(TEST_DIR)/test_dispatcher.c \
 	$(TEST_DIR)/test_executor.c \
 	$(TEST_DIR)/test_job.c \
+	$(TEST_DIR)/test_job_control.c \
 	$(TEST_DIR)/test_command.c \
 	$(SRC_DIR)/shell.c \
 	$(SRC_DIR)/parser.c \
@@ -111,14 +86,8 @@ TEST_SRC := \
 	$(SRC_DIR)/terminal.c \
 	$(COMMON_DIR)/utils.c \
 	$(COMMON_DIR)/log.c \
-	$(TEST_DIR)/test_job_control.c \
 	$(COMMON_DIR)/error.c \
 	$(CONFIG_DIR)/config.c
-
-
-# ------------------------------------------------------------------------------
-# Integration-test sources
-# ------------------------------------------------------------------------------
 
 INTEGRATION_SRC := \
 	$(INTEGRATION_DIR)/test_integration_main.c \
@@ -131,11 +100,6 @@ INTEGRATION_SRC := \
 	$(INTEGRATION_DIR)/test_shell_pty.c \
 	$(TEST_DIR)/test_framework.c
 
-
-# ------------------------------------------------------------------------------
-# Preprocessor flags
-# ------------------------------------------------------------------------------
-
 APP_CPPFLAGS := \
 	$(CPPFLAGS_COMMON) \
 	-Iinclude \
@@ -146,38 +110,19 @@ TEST_CPPFLAGS := \
 	$(APP_CPPFLAGS) \
 	-I$(TEST_DIR)
 
-
-# ------------------------------------------------------------------------------
-# Object files
-# ------------------------------------------------------------------------------
-
-APP_OBJ := \
-	$(APP_SRC:%.c=$(BUILD_DIR)/%.o)
-
-TEST_OBJ := \
-	$(TEST_SRC:%.c=$(BUILD_DIR)/%.o)
-
-INTEGRATION_OBJ := \
-	$(INTEGRATION_SRC:%.c=$(BUILD_DIR)/%.o)
-
-
-# ------------------------------------------------------------------------------
-# Dependency files
-# ------------------------------------------------------------------------------
+APP_OBJ := $(APP_SRC:%.c=$(BUILD_DIR)/%.o)
+TEST_OBJ := $(TEST_SRC:%.c=$(BUILD_DIR)/%.o)
+INTEGRATION_OBJ := $(INTEGRATION_SRC:%.c=$(BUILD_DIR)/%.o)
 
 DEPS := \
 	$(APP_OBJ:.o=.d) \
 	$(TEST_OBJ:.o=.d) \
 	$(INTEGRATION_OBJ:.o=.d)
 
-
-# ------------------------------------------------------------------------------
-# Phony targets
-# ------------------------------------------------------------------------------
-
 .PHONY: \
 	all \
 	build \
+	shell \
 	run \
 	test \
 	integration \
@@ -187,124 +132,60 @@ DEPS := \
 	asan \
 	valgrind \
 	clean \
-	help \
-	shell
-
-
-# ------------------------------------------------------------------------------
-# Default target
-# ------------------------------------------------------------------------------
+	help
 
 all: shell
 
 build: all
-
-
-# ------------------------------------------------------------------------------
-# Application
-# ------------------------------------------------------------------------------
 
 $(TARGET): $(APP_OBJ)
 	@mkdir -p $(dir $@)
 	@echo "  LD      $@"
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-
-# ------------------------------------------------------------------------------
-# Root executable
-# ------------------------------------------------------------------------------
-
 shell: $(TARGET)
 	@echo "  COPY    $(RUN_TARGET)"
 	@cp $(TARGET) $(RUN_TARGET)
 
-
-# ------------------------------------------------------------------------------
-# Run application
-# ------------------------------------------------------------------------------
-
 run: shell
 	./$(RUN_TARGET)
-
-
-# ------------------------------------------------------------------------------
-# Unit-test executable
-# ------------------------------------------------------------------------------
 
 $(TEST_TARGET): $(TEST_OBJ)
 	@mkdir -p $(dir $@)
 	@echo "  LD      $@"
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-
-# ------------------------------------------------------------------------------
-# Integration-test executable
-# ------------------------------------------------------------------------------
-
 $(INTEGRATION_TARGET): $(INTEGRATION_OBJ)
 	@mkdir -p $(dir $@)
 	@echo "  LD      $@"
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
-
-
-# ------------------------------------------------------------------------------
-# Compile production objects
-# ------------------------------------------------------------------------------
 
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@echo "  CC      $<"
 	$(CC) $(APP_CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 
-
-# ------------------------------------------------------------------------------
-# Compile unit-test objects
-# ------------------------------------------------------------------------------
-
 $(BUILD_DIR)/$(TEST_DIR)/%.o: $(TEST_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@echo "  CC      $<"
 	$(CC) $(TEST_CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
-
-
-# ------------------------------------------------------------------------------
-# Compile integration-test objects
-# ------------------------------------------------------------------------------
 
 $(BUILD_DIR)/$(INTEGRATION_DIR)/%.o: $(INTEGRATION_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@echo "  CC      $<"
 	$(CC) $(TEST_CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 
-
-# ------------------------------------------------------------------------------
-# Unit tests
-# ------------------------------------------------------------------------------
-
 test: $(TEST_TARGET)
 	@echo "  TEST    $(TEST_TARGET)"
 	./$(TEST_TARGET)
 
-
-# ------------------------------------------------------------------------------
-# Integration tests
-# ------------------------------------------------------------------------------
-
 integration: $(TARGET) $(INTEGRATION_TARGET)
 	@echo "  TEST    $(INTEGRATION_TARGET)"
+	MINISHELL_TEST_BIN="./$(TARGET)" \
+	MINISHELL_TEST_DIR="./$(BUILD_DIR)" \
 	./$(INTEGRATION_TARGET)
 
-
-# ------------------------------------------------------------------------------
-# Quality gate
-# ------------------------------------------------------------------------------
-
 check: test integration shell
-
-
-# ------------------------------------------------------------------------------
-# Debug build
-# ------------------------------------------------------------------------------
 
 debug:
 	@$(MAKE) \
@@ -312,60 +193,50 @@ debug:
 		CFLAGS='$(COMMON_CFLAGS) -g -O0' \
 		all
 
-
-# ------------------------------------------------------------------------------
-# Release build
-# ------------------------------------------------------------------------------
-
 release:
 	@$(MAKE) \
 		BUILD_DIR=build/release \
 		CFLAGS='$(COMMON_CFLAGS) -O2 -DNDEBUG' \
 		all
 
-
-# ------------------------------------------------------------------------------
-# ASan + UBSan build
-# ------------------------------------------------------------------------------
-
 asan:
-	@$(MAKE) \
+	@ASAN_OPTIONS='detect_leaks=1:halt_on_error=1' \
+	UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1' \
+	$(MAKE) \
 		BUILD_DIR=build/asan \
 		CFLAGS='$(COMMON_CFLAGS) -g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined' \
 		LDFLAGS='-fsanitize=address,undefined' \
-		all
+		check
 
-
-# ------------------------------------------------------------------------------
-# Valgrind
-# ------------------------------------------------------------------------------
-
-valgrind:
-	@$(MAKE) \
-		BUILD_DIR=build/debug \
-		CFLAGS='$(COMMON_CFLAGS) -g -O0' \
-		test
-	@echo "  VALGRIND build/debug/minishell_tests"
-	valgrind \
-		--leak-check=full \
-		--show-leak-kinds=all \
-		--track-fds=yes \
-		build/debug/minishell_tests
-
-
-# ------------------------------------------------------------------------------
-# Cleanup
-# ------------------------------------------------------------------------------
+valgrind: $(TARGET)
+	@command -v $(VALGRIND) >/dev/null 2>&1 || { \
+		echo "valgrind not found"; \
+		exit 1; \
+	}
+	@echo "  VALGRIND basic"
+	@printf 'echo hello\npwd\ntrue\nfalse\nstatus\nexit\n' | \
+		$(VALGRIND) $(VALGRIND_FLAGS) ./$(TARGET)
+	@echo "  VALGRIND redirect/pipeline"
+	@printf 'echo hello > /tmp/minishell_valgrind.txt\ncat < /tmp/minishell_valgrind.txt\nprintf abc | wc -c\nsleep 1 | false\nstatus\nexit\n' | \
+		$(VALGRIND) $(VALGRIND_FLAGS) ./$(TARGET)
+	@rm -f /tmp/minishell_valgrind.txt
+	@echo "  VALGRIND background shutdown"
+	@printf 'sleep 30 &\nsleep 31 &\njobs\nexit\n' | \
+		$(VALGRIND) $(VALGRIND_FLAGS) ./$(TARGET)
+	@echo "  VALGRIND child stress"
+	@{ \
+		for i in $$(seq 1 100); do \
+			echo "true &"; \
+		done; \
+		echo "sleep 1"; \
+		echo "jobs"; \
+		echo "exit"; \
+	} | $(VALGRIND) $(VALGRIND_FLAGS) ./$(TARGET)
 
 clean:
 	@echo "  CLEAN"
 	rm -rf build
 	rm -f $(RUN_TARGET)
-
-
-# ------------------------------------------------------------------------------
-# Help
-# ------------------------------------------------------------------------------
 
 help:
 	@echo "MiniShell build system"
@@ -375,17 +246,12 @@ help:
 	@echo "  make run             Build and run ./shell"
 	@echo "  make test            Build and run unit tests"
 	@echo "  make integration     Build and run integration tests"
-	@echo "  make check           Run unit + integration tests and create ./shell"
-	@echo "  make debug           Build Debug configuration"
-	@echo "  make release         Build Release configuration"
-	@echo "  make asan            Build with ASan + UBSan"
-	@echo "  make valgrind        Run unit tests under Valgrind"
+	@echo "  make check           Run unit + integration tests"
+	@echo "  make debug           Build debug configuration"
+	@echo "  make release         Build release configuration"
+	@echo "  make asan            Run tests with ASan + LSan + UBSan"
+	@echo "  make valgrind        Run runtime memory/fd checks with Valgrind"
 	@echo "  make clean           Remove all build products"
 	@echo "  make help            Show this help"
-
-
-# ------------------------------------------------------------------------------
-# Auto-generated dependency files
-# ------------------------------------------------------------------------------
 
 -include $(DEPS)
