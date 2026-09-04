@@ -148,6 +148,7 @@ INTEGRATION_SRC := \
 	$(INTEGRATION_DIR)/test_shell_pipeline.c \
 	$(INTEGRATION_DIR)/test_shell_status.c \
 	$(INTEGRATION_DIR)/test_shell_background.c \
+	$(INTEGRATION_DIR)/test_shell_pty.c \
 	$(TEST_DIR)/test_framework.c
 
 # ------------------------------------------------------------------------------

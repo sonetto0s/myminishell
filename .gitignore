@@ -54,3 +54,4 @@ shell
 .vscode/
 # debug information files
 *.dwo
+/build/

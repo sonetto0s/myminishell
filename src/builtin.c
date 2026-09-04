@@ -5,30 +5,37 @@
 #include "shell_context.h"
 #include "builtin_table.h"
 #include "system_info.h"
-#include <unistd.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <sys/wait.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/utsname.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 int builtin_cd(Command *cmd, struct ShellContext *ctx)
 {
     (void)ctx;
-    if (cmd->argc < 2) {
+    if (cmd->argc < 2)
+    {
         const char *home = getenv("HOME");
-        if (home == NULL) {
+        if (home == NULL)
+        {
             fprintf(stderr, "cd: HOME not set\n");
             return MiniShell_ERR_UNKNOWN;
         }
-        if (chdir(home) == -1) {
+
+        if (chdir(home) == -1)
+        {
             perror("cd");
             return MiniShell_ERR_UNKNOWN;
         }
+
         return MiniShell_OK;
     }
-    if (chdir(cmd->argv[1]) == -1) {
+
+    if (chdir(cmd->argv[1]) == -1)
+    {
         perror("cd");
         return MiniShell_ERR_UNKNOWN;
     }
@@ -40,22 +47,18 @@ int builtin_pwd(Command *cmd, struct ShellContext *ctx)
     (void)ctx;
     (void)cmd;
     char buff[100];
+
     if (getcwd(buff, sizeof(buff)) != NULL)
     {
-        fprintf(stdout,"%s\n",buff);
+        fprintf(stdout, "%s\n", buff);
         return MiniShell_OK;
     }
-    else
-    {
-        perror("getcwd");
-        return MiniShell_ERR_UNKNOWN;
-    }
+    perror("getcwd");
+    return MiniShell_ERR_UNKNOWN;
 }
-
 
 int builtin_exit(Command *cmd, struct ShellContext *ctx)
 {
-
     (void)cmd;
     ctx->running = 0;
     return MiniShell_OK;
@@ -70,11 +73,11 @@ int builtin_help(Command *cmd, struct ShellContext *ctx)
     for (size_t i = 0; i < builtin_count(); i++)
     {
         BuiltinEntry *entry = builtin_get(i);
+
         if (entry)
-        {
             printf(" %s\n", entry->name);
-        }
     }
+
     return MiniShell_OK;
 }
 
@@ -84,6 +87,7 @@ int builtin_jobs(Command *cmd, struct ShellContext *ctx)
     job_list(&ctx->jobs);
     return MiniShell_OK;
 }
+
 int builtin_status(Command *cmd, struct ShellContext *ctx)
 {
     (void)cmd;
@@ -96,11 +100,11 @@ int builtin_sysinfo(Command *cmd, struct ShellContext *ctx)
     (void)cmd;
     (void)ctx;
     SystemInfo info;
+
     int ret = system_info_collect(&info);
     if (ret != MiniShell_OK)
-    {
         return ret;
-    }
+
     system_info_print(&info);
     return MiniShell_OK;
 }
@@ -111,17 +115,15 @@ int builtin_fg(Command *cmd, struct ShellContext *ctx)
     Job *job = ctx->jobs.head;
     while (job)
     {
-        if (job->status == JOB_STOPPED)
-        {
+        if (job->status == JOB_STOPPED || job->status == JOB_RUNNING)
             break;
-        }
 
         job = job->next;
     }
 
     if (job == NULL)
     {
-        printf("fg: no stopped job\n");
+        printf("fg: no job\n");
         return MiniShell_ERR_UNKNOWN;
     }
 
@@ -131,56 +133,54 @@ int builtin_fg(Command *cmd, struct ShellContext *ctx)
         return MiniShell_ERR_UNKNOWN;
     }
 
-    if (job_continue(job) < 0)
+    if (job->status == JOB_STOPPED)
     {
-        terminal_restore();
-        return MiniShell_ERR_UNKNOWN;
+        if (job_continue(job) < 0)
+        {
+            terminal_restore();
+            return MiniShell_ERR_UNKNOWN;
+        }
     }
 
-    int status;
+    int status = 0;
     pid_t ret;
-
     while (1)
     {
         ret = waitpid(-job->pgid, &status, WUNTRACED);
         if (ret < 0)
         {
             if (errno == EINTR)
-            {
                 continue;
-            }
+
             log_error("failed wait foreground job");
             terminal_restore();
             return MiniShell_ERR_UNKNOWN;
         }
         Process *process = job->processes;
+
         while (process)
         {
             if (process->pid == ret)
             {
                 if (WIFSTOPPED(status))
-                {
                     process->status = PROCESS_STOPPED;
-                }
                 else if (WIFEXITED(status) || WIFSIGNALED(status))
-                {
                     process->status = PROCESS_DONE;
-                }
+
                 break;
             }
 
             process = process->next;
         }
+
         if (WIFSTOPPED(status))
         {
             job->status = JOB_STOPPED;
-
             terminal_restore();
-
             printf("\n[%d]+ Stopped %s\n", job->id, job->command);
-
             return MiniShell_OK;
         }
+
         int all_done = 1;
         process = job->processes;
         while (process)
@@ -190,24 +190,21 @@ int builtin_fg(Command *cmd, struct ShellContext *ctx)
                 all_done = 0;
                 break;
             }
+
             process = process->next;
         }
 
         if (all_done)
-        {
             break;
-        }
     }
+
     terminal_restore();
     job_remove(&ctx->jobs, job->pgid);
     if (WIFEXITED(status))
-    {
         return WEXITSTATUS(status);
-    }
+
     if (WIFSIGNALED(status))
-    {
         return 128 + WTERMSIG(status);
-    }
 
     return MiniShell_ERR_UNKNOWN;
 }
@@ -219,9 +216,8 @@ int builtin_bg(Command *cmd, struct ShellContext *ctx)
     while (job)
     {
         if (job->status == JOB_STOPPED)
-        {
             break;
-        }
+
         job = job->next;
     }
     if (job == NULL)
@@ -229,14 +225,17 @@ int builtin_bg(Command *cmd, struct ShellContext *ctx)
         printf("bg:no stopped job\n");
         return MiniShell_ERR_UNKNOWN;
     }
+
     if (job_continue(job) < 0)
     {
         log_error("failed continue background job");
         return MiniShell_ERR_UNKNOWN;
     }
+
     printf("[%d] %s &\n", job->id, job->command);
     return MiniShell_OK;
 }
+
 int builtin_reload(Command *cmd, struct ShellContext *ctx)
 {
     (void)cmd;
@@ -245,14 +244,12 @@ int builtin_reload(Command *cmd, struct ShellContext *ctx)
         log_error("failed reload config");
         return MiniShell_ERR_UNKNOWN;
     }
+
     if (ctx->config.debug)
-    {
         log_setlevel(LOG_DEBUG);
-    }
     else
-    {
         log_setlevel(LOG_INFO);
-    }
+
     printf("config reloaded\n");
     return MiniShell_OK;
 }
