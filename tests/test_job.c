@@ -648,7 +648,8 @@ void test_job_multi_process(void)
 
     TEST_ASSERT_EQ(kill(pid2, SIGTERM), 0);
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 100; i++)
+    {
         job_reap(&manager);
 
         if (job->processes->next->status == PROCESS_DONE)

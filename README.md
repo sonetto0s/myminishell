@@ -2,18 +2,25 @@
 
 ## 项目简介
 
- 这是一个基于 Linux 用户态的MiniShell,用来实现进程控制与命令解析。以此深入学习Linux系统编程相关机制🙃
+这是一个基于Linux用户态实现的MiniShell,主要用来实现命令解析、进程控制、管道、重定向、Job Control、Signal/Event等功能,以此深入学习Linux系统编程相关机制🙃
+项目目前已逐步增加了模块化、配置、日志、错误处理、Job管理等多项工程化能力.后续V1.6开始迁移至ARM Linux/Orange Pi环境,并逐渐向嵌入式Linux设备管理终端方向扩展.
 
 ## 开发环境
 
 - OS: Ubuntu 22.04
 - compiler: GCC
 - 编译工具: Make
-- 编程语言: C
+- 编程语言: C11
 
-## 当前版本: V1.4
+## 当前版本:V1.5 Engineering Release
 
 ## 更新日志
+
+V1.5:
+- 优化signal/event/terminal/job  control
+- 修缮资源生命周期管理
+- 引入自动化测试/Sanitizer/Valgrind
+
 V1.4:
 - 增加process groups
 - 优化terminal与job contro
@@ -147,24 +154,258 @@ V0.5:
 - V0.1:初始化项目,初步构建MiniShell生命周期框架
 
 
-## 运行方式
 
-### 编译Shell
+## 命令执行
 
-- Makefile
-- make
-- ./shell
+当前版本支持:
 
-### 编译测试
-- Makefile
-- make test
-- ./test
+```
+普通外部命令
+单命令执行
+多级 Pipeline
+输入重定向 <
+输出重定向 >
+追加重定向 >>
+后台执行 &
+内建命令
+```
+
+示例:
+
+```
+ls -l
+echo hello > output.txt
+echo world >> output.txt
+cat < output.txt
+printf "a\nb\nc\n" | grep . | wc -l
+sleep 10 &
+
+当前内建命令:
+cd
+pwd
+exit
+jobs
+fg
+bg
+help
+status
+sysinfo
+reload
+```
+
+## 项目主要核心机制
+
+### Job Control
+```
+miniShell已实现基础 unix Job Control
+
+主要能力:
+- process group control
+- pgid 管理
+- foreground/background Job
+- `Ctrl+C`
+- `Ctrl+Z`
+- `fg`
+- `bg`
+- `jobs`
+- 前台终端所有权切换
+- STOPPED / RUNNING / DONE 状态管理
+- Pipeline 整体作为一个 Job 管理
+- Shell 退出时后台 Job 清理
+
+Job 状态:
+- JOB_RUNNING
+- JOB_STOPPED
+- JOB_DONE
+
+单个 Process 状态：
+- PROCESS_RUNNING
+- PROCESS_STOPPED
+- PROCESS_DONE
+```
+
+### signal/event
+```
+miniShell不在signal handler中执行复杂逻辑
+当前工作流程:
+
+signal
+   |
+sig_atomic_t pending event
+   |
+self-pipe
+   |
+select()
+   |
+normal process context
+   |
+job_reap / prompt handling
+
+处理的主要事件包括：
+
+- SIGCHLD
+- SIGINT
+
+Shell 自身忽略 Job Control 相关终端信号:
+
+- SIGQUIT
+- SIGTSTP
+- SIGTTIN
+- SIGTTOU
+
+子进程在 execvp() 前恢复默认 signal disposition
+
+```
+
+### event loop
+```
+Shell 主循环使用:
+
+- select()
+
+同时监听:
+
+- STDIN
+- Event self-pipe
+
+```
+
+## 配置系统
+默认配置文件:
+```
+config/config.conf
+
+```
+
+当前默认配置:
+
+```
+prompts=MiniShell
+max_job=64
+debug=0
+```
+---
+
+### system info
+
+sysinfo用于读取当前系统状态,包含:
+
+```
+Kernel
+Hostname
+Architecture
+CPU
+Memory
+Uptime
+```
+
+完整模块详细设计见以下文件:
+
+```
+docs/architecture.md
+docs/module.md
+```
+## 运行说明
+开发环境:
+
+```
+Linux/Ubuntu 22.04
+GCC
+C11
+Visual Studio Code (ssh)
+GNU Make
+```
+
+默认构建:
+
+```
+make
+```
+
+默认生成:
+
+```
+build/default/minishell
+./shell
+```
+编译Shell:
+
+```
+Makefile
+make
+./shell
+```
+编译测试:
+
+```
+Makefile
+make test
+./test
+```
+
+运行操作:
+
+```
+./shell
+make run
+```
+## build 方式
+
+普通 debug build:
+```
+make debug
+```
+Release Build:
+```
+make release
+```
+严格编译:
+```
+make strict
+```
+严格编译会启用以下机制:
+```
+-Wall
+-Wextra
+-Wpedantic
+-Wformat=2
+-Werror
+```
+## Test说明
+
+完整普通测试:
+
+```
+make check
+```
+
+Unit Test:
+
+```
+make test
+```
+
+Integration Test:
+
+```
+make integration
+```
+详细测试说明见以下文件:
+
+```
+docs/test.md
+```
+
+
 
 
 ## 项目结构
 
 ```
 .
+├── CMakeLists.txt
+├── Makefile
+├── README.md
 ├── common
 │   ├── error.c
 │   ├── error.h
@@ -183,19 +424,21 @@ V0.5:
 │   └── test.md
 ├── include
 │   ├── builtin.h
+│   ├── builtin_table.h
 │   ├── command.h
 │   ├── dispatcher.h
 │   ├── event.h
 │   ├── executor.h
 │   ├── job.h
 │   ├── parser.h
-│   ├── shell_context.h
 │   ├── shell.h
-│   └── sig.h
-├── Makefile
-├── README.md
+│   ├── shell_context.h
+│   ├── sig.h
+│   ├── system_info.h
+│   └── terminal.h
 ├── src
 │   ├── builtin.c
+│   ├── builtin_table.c
 │   ├── command.c
 │   ├── dispatcher.c
 │   ├── event.c
@@ -205,12 +448,35 @@ V0.5:
 │   ├── parser.c
 │   ├── shell.c
 │   ├── shell_context.c
-│   └── sig.c
+│   ├── sig.c
+│   ├── system_info.c
+│   └── terminal.c
 └── tests
+    ├── integration
+    │   ├── test_integration_main.c
+    │   ├── test_shell_background.c
+    │   ├── test_shell_basic.c
+    │   ├── test_shell_pipeline.c
+    │   ├── test_shell_pty.c
+    │   ├── test_shell_redirect.c
+    │   ├── test_shell_runner.c
+    │   └── test_shell_status.c
+    ├── test_builtin_table.c
+    ├── test_command.c
     ├── test_config.c
+    ├── test_config.conf
+    ├── test_dispatcher.c
+    ├── test_event.c
+    ├── test_executor.c
+    ├── test_framework.c
+    ├── test_framework.h
+    ├── test_job.c
+    ├── test_job_control.c
     ├── test_log.c
     ├── test_main.c
-    └── test_parser.c
+    ├── test_parser.c
+    ├── test_shell_context.c
+    └── test_system_info.c
 
 ```
 
@@ -225,4 +491,47 @@ V0.5:
 - select 监听机制(后续升级若情况需要可能会引入epoll)
 - Makefile
 - Git
-- GDB 调试
+- GDB 调试 -->
+
+## 后续方向
+
+V1.6 开始，MiniShell 将逐步从纯PC/linux环境项目进入 ARM Linux 环境。
+
+计划方向：
+
+```
+香橙派5plus
+ARM Linux
+UART
+Device status
+File/device event
+Network event
+Device command interface
+```
+
+## 当前项目roadmap
+
+```
+V1.2 Basic Stable                    OK
+V1.3 Stability                       OK
+V1.4 Unix Depth                      OK
+
+V1.5 Engineering Release             <-this stage
+ ├── Correctness / Build Baseline    OK
+ ├── Test Framework                  OK
+ ├── Unit Test Expansion             OK
+ ├── Integration / System Test       OK
+ ├── Resource Lifetime               OK
+ ├── Job / Signal / Terminal         OK
+ ├── Runtime Analysis                OK
+ ├── Static Analysis                 OK
+ ├── Documentation                   CURRENT
+ ├── CI
+ ├── ARM-ready Build Interface
+ ├── CMake Build Parity
+ └── Release Candidate Audit
+
+V1.6 ARM / Orange Pi
+V2.0 Embedded Device Terminal
+```
+
