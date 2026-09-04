@@ -1,0 +1,59 @@
+name: MiniShell CI
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minishell-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cppcheck
+
+      - name: Show tool versions
+        run: |
+          gcc --version
+          make --version
+          cppcheck --version
+
+      - name: Run normal test suite
+        run: |
+          make clean
+          make check
+
+      - name: Run strict compiler gate
+        run: |
+          make clean
+          make strict
+
+      - name: Run cppcheck
+        run: |
+          make cppcheck
+
+      - name: Check repository formatting
+        run: |
+          git diff --check
