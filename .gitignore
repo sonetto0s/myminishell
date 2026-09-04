@@ -55,3 +55,4 @@ shell
 # debug information files
 *.dwo
 /build/
+/dist/

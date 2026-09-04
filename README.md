@@ -20,6 +20,7 @@ V1.5:
 - 优化signal/event/terminal/job  control
 - 修缮资源生命周期管理
 - 引入自动化测试/Sanitizer/Valgrind
+- 新增CI/arm linux交叉编译链
 
 V1.4:
 - 增加process groups
@@ -525,9 +526,9 @@ V1.5 Engineering Release             <-this stage
  ├── Job / Signal / Terminal         OK
  ├── Runtime Analysis                OK
  ├── Static Analysis                 OK
- ├── Documentation                   CURRENT
- ├── CI
- ├── ARM-ready Build Interface
+ ├── Documentation                   OK
+ ├── CI                              OK
+ ├── ARM-ready Build Interface       OK
  ├── CMake Build Parity
  └── Release Candidate Audit
 

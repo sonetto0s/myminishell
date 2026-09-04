@@ -1,6 +1,15 @@
-CC ?= gcc
+CROSS_COMPILE ?=
+ARCH ?= native
+
+ifeq ($(origin CC), default)
+CC := $(CROSS_COMPILE)gcc
+endif
+
 VALGRIND ?= valgrind
 CPPCHECK ?= cppcheck
+
+ARM64_CROSS_COMPILE ?= aarch64-linux-gnu-
+ARM64_CC := $(ARM64_CROSS_COMPILE)gcc
 
 COMMON_CFLAGS := \
 	-std=c11 \
@@ -42,6 +51,7 @@ COMMON_DIR := common
 CONFIG_DIR := config
 
 BUILD_DIR ?= build/default
+DEPLOY_DIR ?= dist/$(ARCH)
 
 TARGET := $(BUILD_DIR)/minishell
 RUN_TARGET := shell
@@ -134,8 +144,15 @@ DEPS := \
 .PHONY: \
 	all \
 	build \
+	binary \
 	shell \
 	run \
+	native \
+	arm64 \
+	package \
+	package-files \
+	arm64-package \
+	print-config \
 	test \
 	integration \
 	check \
@@ -153,10 +170,7 @@ all: shell
 
 build: all
 
-$(TARGET): $(APP_OBJ)
-	@mkdir -p $(dir $@)
-	@echo "  LD      $@"
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+binary: $(TARGET)
 
 shell: $(TARGET)
 	@echo "  COPY    $(RUN_TARGET)"
@@ -164,6 +178,67 @@ shell: $(TARGET)
 
 run: shell
 	./$(RUN_TARGET)
+
+native: shell
+
+arm64:
+	@command -v $(ARM64_CC) >/dev/null 2>&1 || { \
+		echo "ARM64 cross compiler not found: $(ARM64_CC)"; \
+		echo "Install it with: sudo apt install gcc-aarch64-linux-gnu"; \
+		exit 1; \
+	}
+	@$(MAKE) \
+		ARCH=arm64 \
+		CROSS_COMPILE=$(ARM64_CROSS_COMPILE) \
+		CC=$(ARM64_CC) \
+		BUILD_DIR=build/arm64 \
+		binary
+	@echo "  ARM64   build/arm64/minishell"
+
+package:
+	@rm -rf build/package/native
+	@$(MAKE) \
+		ARCH=native \
+		BUILD_DIR=build/package/native \
+		DEPLOY_DIR=dist/native \
+		CFLAGS='$(COMMON_CFLAGS) -O2 -DNDEBUG' \
+		package-files
+
+package-files: $(TARGET)
+	@echo "  PACKAGE $(DEPLOY_DIR)"
+	@rm -rf $(DEPLOY_DIR)
+	@mkdir -p $(DEPLOY_DIR)/bin $(DEPLOY_DIR)/config
+	@cp $(TARGET) $(DEPLOY_DIR)/bin/minishell
+	@cp $(CONFIG_DIR)/config.conf $(DEPLOY_DIR)/config/config.conf
+
+arm64-package:
+	@command -v $(ARM64_CC) >/dev/null 2>&1 || { \
+		echo "ARM64 cross compiler not found: $(ARM64_CC)"; \
+		echo "Install it with: sudo apt install gcc-aarch64-linux-gnu"; \
+		exit 1; \
+	}
+	@rm -rf build/package/arm64
+	@$(MAKE) \
+		ARCH=arm64 \
+		CROSS_COMPILE=$(ARM64_CROSS_COMPILE) \
+		CC=$(ARM64_CC) \
+		BUILD_DIR=build/package/arm64 \
+		DEPLOY_DIR=dist/arm64 \
+		CFLAGS='$(COMMON_CFLAGS) -O2 -DNDEBUG' \
+		package-files
+
+print-config:
+	@echo "ARCH          = $(ARCH)"
+	@echo "CROSS_COMPILE = $(CROSS_COMPILE)"
+	@echo "CC            = $(CC)"
+	@echo "BUILD_DIR     = $(BUILD_DIR)"
+	@echo "TARGET        = $(TARGET)"
+	@echo "DEPLOY_DIR    = $(DEPLOY_DIR)"
+
+$(TARGET): $(APP_OBJ)
+	@mkdir -p $(dir $@)
+	@echo "  LD      $@"
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(TEST_TARGET): $(TEST_OBJ)
 	@mkdir -p $(dir $@)
@@ -277,25 +352,42 @@ static: strict cppcheck
 clean:
 	@echo "  CLEAN"
 	rm -rf build
+	rm -rf dist
 	rm -f $(RUN_TARGET)
 
 help:
 	@echo "MiniShell build system"
 	@echo ""
+	@echo "Build:"
 	@echo "  make                 Build MiniShell and create ./shell"
 	@echo "  make build           Build MiniShell and create ./shell"
-	@echo "  make run             Build and run ./shell"
+	@echo "  make native          Build native MiniShell"
+	@echo "  make arm64           Cross-compile ARM64 MiniShell"
+	@echo "  make run             Build and run native MiniShell"
+	@echo ""
+	@echo "Deployment:"
+	@echo "  make package         Create optimized native deployment package"
+	@echo "  make arm64-package   Create optimized ARM64 deployment package"
+	@echo "  make print-config    Show current build configuration"
+	@echo ""
+	@echo "Tests:"
 	@echo "  make test            Build and run unit tests"
 	@echo "  make integration     Build and run integration tests"
 	@echo "  make check           Run unit + integration tests"
-	@echo "  make debug           Build debug configuration"
-	@echo "  make release         Build release configuration"
+	@echo ""
+	@echo "Quality:"
 	@echo "  make asan            Run tests with ASan + LSan + UBSan"
 	@echo "  make valgrind        Run runtime memory/fd checks"
-	@echo "  make strict          Run full tests with compiler warnings as errors"
+	@echo "  make strict          Run full tests with warnings as errors"
 	@echo "  make cppcheck        Run cppcheck static analysis"
 	@echo "  make static          Run strict build + cppcheck"
-	@echo "  make clean           Remove all build products"
+	@echo ""
+	@echo "Profiles:"
+	@echo "  make debug           Build debug configuration"
+	@echo "  make release         Build release configuration"
+	@echo ""
+	@echo "Maintenance:"
+	@echo "  make clean           Remove build/deployment products"
 	@echo "  make help            Show this help"
 
 -include $(DEPS)

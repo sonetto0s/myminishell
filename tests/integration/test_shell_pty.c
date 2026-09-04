@@ -90,10 +90,53 @@ static int wait_for_text(int fd, const char *target, int timeout_ms)
 static int wait_for_prompt_with_text(int fd, const char *target, int timeout_ms)
 {
     char output[4096];
-    if (read_until_text(fd, ">>MiniShell ", output, sizeof(output), timeout_ms) < 0)
-        return -1;
+    size_t length = 0;
+    int elapsed = 0;
 
-    return strstr(output, target) != NULL ? 0 : -1;
+    if (!target) return -1;
+
+    output[0] = '\0';
+
+    while (elapsed < timeout_ms) {
+        struct pollfd pfd = {
+            .fd = fd,
+            .events = POLLIN
+        };
+
+        int ret = poll(&pfd, 1, 50);
+
+        if (ret < 0) {
+            if (errno == EINTR) continue;
+            return -1;
+        }
+
+        elapsed += 50;
+
+        if (ret == 0) continue;
+        if (!(pfd.revents & (POLLIN | POLLHUP))) continue;
+        if (length + 1 >= sizeof(output)) return -1;
+
+        ssize_t n = read(fd, output + length, sizeof(output) - length - 1);
+
+        if (n < 0) {
+            if (errno == EINTR) continue;
+            return -1;
+        }
+
+        if (n == 0) return -1;
+
+        length += (size_t)n;
+        output[length] = '\0';
+
+        char *target_pos = strstr(output, target);
+
+        if (target_pos &&
+            strstr(target_pos + strlen(target), ">>MiniShell ") != NULL) {
+            return 0;
+        }
+    }
+
+    return -1;
 }
 
 static int write_all(int fd, const char *text)
