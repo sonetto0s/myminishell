@@ -1,5 +1,6 @@
 CC ?= gcc
 VALGRIND ?= valgrind
+CPPCHECK ?= cppcheck
 
 COMMON_CFLAGS := \
 	-std=c11 \
@@ -7,6 +8,10 @@ COMMON_CFLAGS := \
 	-Wextra \
 	-Wpedantic \
 	-Wformat=2
+
+STRICT_CFLAGS := \
+	$(COMMON_CFLAGS) \
+	-Werror
 
 CFLAGS ?= $(COMMON_CFLAGS) -g -O0
 
@@ -22,6 +27,13 @@ VALGRIND_FLAGS := \
 	--track-origins=yes \
 	--track-fds=yes \
 	--error-exitcode=99
+
+CPPCHECK_FLAGS := \
+	--std=c11 \
+	--language=c \
+	--enable=warning,performance,portability \
+	--suppress=missingIncludeSystem \
+	--error-exitcode=2
 
 SRC_DIR := src
 TEST_DIR := tests
@@ -131,6 +143,9 @@ DEPS := \
 	release \
 	asan \
 	valgrind \
+	strict \
+	cppcheck \
+	static \
 	clean \
 	help
 
@@ -233,6 +248,32 @@ valgrind: $(TARGET)
 		echo "exit"; \
 	} | $(VALGRIND) $(VALGRIND_FLAGS) ./$(TARGET)
 
+strict:
+	@$(MAKE) \
+		BUILD_DIR=build/strict \
+		CFLAGS='$(STRICT_CFLAGS) -g -O0' \
+		check
+
+cppcheck:
+	@command -v $(CPPCHECK) >/dev/null 2>&1 || { \
+		echo "cppcheck not found"; \
+		exit 1; \
+	}
+	@echo "  CPPCHECK"
+	$(CPPCHECK) \
+		$(CPPCHECK_FLAGS) \
+		-D_POSIX_C_SOURCE=200809L \
+		-Iinclude \
+		-I$(COMMON_DIR) \
+		-I$(CONFIG_DIR) \
+		-I$(TEST_DIR) \
+		$(SRC_DIR) \
+		$(COMMON_DIR) \
+		$(CONFIG_DIR) \
+		$(TEST_DIR)
+
+static: strict cppcheck
+
 clean:
 	@echo "  CLEAN"
 	rm -rf build
@@ -250,7 +291,10 @@ help:
 	@echo "  make debug           Build debug configuration"
 	@echo "  make release         Build release configuration"
 	@echo "  make asan            Run tests with ASan + LSan + UBSan"
-	@echo "  make valgrind        Run runtime memory/fd checks with Valgrind"
+	@echo "  make valgrind        Run runtime memory/fd checks"
+	@echo "  make strict          Run full tests with compiler warnings as errors"
+	@echo "  make cppcheck        Run cppcheck static analysis"
+	@echo "  make static          Run strict build + cppcheck"
 	@echo "  make clean           Remove all build products"
 	@echo "  make help            Show this help"
 

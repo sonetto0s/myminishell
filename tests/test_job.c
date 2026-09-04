@@ -600,10 +600,9 @@ void test_job_multi_process(void)
 
     TEST_ASSERT_EQ(process_add(job, pid1), 0);
     TEST_ASSERT_EQ(process_add(job, pid2), 0);
-    TEST_ASSERT_NOT_NULL(job->processes);
-    TEST_ASSERT_NOT_NULL(job->processes->next);
 
-    if (!job->processes || !job->processes->next) {
+    if (!job->processes) {
+        TEST_ASSERT(0);
         kill(pid1, SIGTERM);
         kill(pid2, SIGTERM);
         waitpid(pid1, NULL, 0);
@@ -611,6 +610,20 @@ void test_job_multi_process(void)
         job_destroy(&manager);
         return;
     }
+
+    TEST_ASSERT_NOT_NULL(job->processes);
+
+    if (!job->processes->next) {
+        TEST_ASSERT(0);
+        kill(pid1, SIGTERM);
+        kill(pid2, SIGTERM);
+        waitpid(pid1, NULL, 0);
+        waitpid(pid2, NULL, 0);
+        job_destroy(&manager);
+        return;
+    }
+
+    TEST_ASSERT_NOT_NULL(job->processes->next);
 
     TEST_ASSERT_EQ(job->processes->pid, pid1);
     TEST_ASSERT_EQ(job->processes->next->pid, pid2);
@@ -638,7 +651,8 @@ void test_job_multi_process(void)
     for (int i = 0; i < 100; i++) {
         job_reap(&manager);
 
-        if (job->processes->next->status == PROCESS_DONE) {
+        if (job->processes->next->status == PROCESS_DONE)
+        {
             done2 = 1;
             break;
         }
