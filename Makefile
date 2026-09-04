@@ -1,19 +1,5 @@
 # ==============================================================================
-# MiniShell V1.5 - GNU Make Build System
-# ==============================================================================
-#
-# Responsibilities:
-#   - Build the MiniShell application.
-#   - Build and run unit tests.
-#   - Build and run integration tests against the real MiniShell binary.
-#   - Keep application / unit-test / integration-test products separated.
-#   - Provide Debug / Release / ASan+UBSan / Valgrind targets.
-#   - Generate dependency files automatically.
-#   - Keep POSIX feature requirements explicit.
-#
-# CMake will become the primary build system at the end of V1.5.
-# This Makefile remains a clean developer-facing entry point during V1.5.
-#
+# MiniShell Makefile
 # ==============================================================================
 
 
@@ -48,11 +34,11 @@ LDLIBS  ?=
 # Directories
 # ------------------------------------------------------------------------------
 
-SRC_DIR       := src
-TEST_DIR      := tests
+SRC_DIR         := src
+TEST_DIR        := tests
 INTEGRATION_DIR := $(TEST_DIR)/integration
-COMMON_DIR    := common
-CONFIG_DIR    := config
+COMMON_DIR      := common
+CONFIG_DIR      := config
 
 BUILD_DIR ?= build/default
 
@@ -62,6 +48,7 @@ BUILD_DIR ?= build/default
 # ------------------------------------------------------------------------------
 
 TARGET             := $(BUILD_DIR)/minishell
+RUN_TARGET         := shell
 TEST_TARGET        := $(BUILD_DIR)/minishell_tests
 INTEGRATION_TARGET := $(BUILD_DIR)/minishell_integration_tests
 
@@ -93,9 +80,6 @@ APP_SRC := \
 
 # ------------------------------------------------------------------------------
 # Unit-test sources
-#
-# Unit tests have their own main().
-# Therefore application main.c is intentionally excluded.
 # ------------------------------------------------------------------------------
 
 TEST_SRC := \
@@ -109,6 +93,7 @@ TEST_SRC := \
 	$(TEST_DIR)/test_builtin_table.c \
 	$(TEST_DIR)/test_system_info.c \
 	$(TEST_DIR)/test_dispatcher.c \
+	$(TEST_DIR)/test_executor.c \
 	$(TEST_DIR)/test_job.c \
 	$(TEST_DIR)/test_command.c \
 	$(SRC_DIR)/shell.c \
@@ -132,12 +117,6 @@ TEST_SRC := \
 
 # ------------------------------------------------------------------------------
 # Integration-test sources
-#
-# IMPORTANT:
-# These tests do NOT link against MiniShell implementation modules.
-# They launch $(TARGET) as a separate process.
-#
-# Add a source file here only after the file actually exists.
 # ------------------------------------------------------------------------------
 
 INTEGRATION_SRC := \
@@ -151,14 +130,9 @@ INTEGRATION_SRC := \
 	$(INTEGRATION_DIR)/test_shell_pty.c \
 	$(TEST_DIR)/test_framework.c
 
+
 # ------------------------------------------------------------------------------
-# Per-target preprocessor flags
-#
-# Production code:
-#   include/, common/, config/
-#
-# Unit / integration tests:
-#   additionally need tests/
+# Preprocessor flags
 # ------------------------------------------------------------------------------
 
 APP_CPPFLAGS := \
@@ -203,6 +177,7 @@ DEPS := \
 .PHONY: \
 	all \
 	build \
+	run \
 	test \
 	integration \
 	check \
@@ -211,14 +186,15 @@ DEPS := \
 	asan \
 	valgrind \
 	clean \
-	help
+	help \
+	shell
 
 
 # ------------------------------------------------------------------------------
 # Default target
 # ------------------------------------------------------------------------------
 
-all: $(TARGET)
+all: shell
 
 build: all
 
@@ -234,6 +210,23 @@ $(TARGET): $(APP_OBJ)
 
 
 # ------------------------------------------------------------------------------
+# Root executable
+# ------------------------------------------------------------------------------
+
+shell: $(TARGET)
+	@echo "  COPY    $(RUN_TARGET)"
+	@cp $(TARGET) $(RUN_TARGET)
+
+
+# ------------------------------------------------------------------------------
+# Run application
+# ------------------------------------------------------------------------------
+
+run: shell
+	./$(RUN_TARGET)
+
+
+# ------------------------------------------------------------------------------
 # Unit-test executable
 # ------------------------------------------------------------------------------
 
@@ -245,9 +238,6 @@ $(TEST_TARGET): $(TEST_OBJ)
 
 # ------------------------------------------------------------------------------
 # Integration-test executable
-#
-# This executable contains only the integration-test runner.
-# MiniShell itself is built separately as $(TARGET).
 # ------------------------------------------------------------------------------
 
 $(INTEGRATION_TARGET): $(INTEGRATION_OBJ)
@@ -267,9 +257,7 @@ $(BUILD_DIR)/%.o: %.c
 
 
 # ------------------------------------------------------------------------------
-# Compile unit/integration test objects
-#
-# Tests need -Itests in addition to the normal project include paths.
+# Compile unit-test objects
 # ------------------------------------------------------------------------------
 
 $(BUILD_DIR)/$(TEST_DIR)/%.o: $(TEST_DIR)/%.c
@@ -299,10 +287,6 @@ test: $(TEST_TARGET)
 
 # ------------------------------------------------------------------------------
 # Integration tests
-#
-# First build the real MiniShell.
-# Then build the integration-test runner.
-# Then run the runner.
 # ------------------------------------------------------------------------------
 
 integration: $(TARGET) $(INTEGRATION_TARGET)
@@ -312,15 +296,13 @@ integration: $(TARGET) $(INTEGRATION_TARGET)
 
 # ------------------------------------------------------------------------------
 # Quality gate
-#
-# This is the command CI will eventually call.
 # ------------------------------------------------------------------------------
 
-check: test integration
+check: test integration shell
 
 
 # ------------------------------------------------------------------------------
-# Debug
+# Debug build
 # ------------------------------------------------------------------------------
 
 debug:
@@ -331,7 +313,7 @@ debug:
 
 
 # ------------------------------------------------------------------------------
-# Release
+# Release build
 # ------------------------------------------------------------------------------
 
 release:
@@ -342,9 +324,7 @@ release:
 
 
 # ------------------------------------------------------------------------------
-# ASan + UBSan
-#
-# Builds a separate sanitizer tree so normal objects can never contaminate it.
+# ASan + UBSan build
 # ------------------------------------------------------------------------------
 
 asan:
@@ -357,8 +337,6 @@ asan:
 
 # ------------------------------------------------------------------------------
 # Valgrind
-#
-# Build debug unit-test executable, then run it under Valgrind.
 # ------------------------------------------------------------------------------
 
 valgrind:
@@ -366,12 +344,12 @@ valgrind:
 		BUILD_DIR=build/debug \
 		CFLAGS='$(COMMON_CFLAGS) -g -O0' \
 		test
-	@echo "  VALGRIND $(BUILD_DIR)/minishell_tests"
+	@echo "  VALGRIND build/debug/minishell_tests"
 	valgrind \
 		--leak-check=full \
 		--show-leak-kinds=all \
 		--track-fds=yes \
-		$(BUILD_DIR)/minishell_tests
+		build/debug/minishell_tests
 
 
 # ------------------------------------------------------------------------------
@@ -381,6 +359,7 @@ valgrind:
 clean:
 	@echo "  CLEAN"
 	rm -rf build
+	rm -f $(RUN_TARGET)
 
 
 # ------------------------------------------------------------------------------
@@ -390,11 +369,12 @@ clean:
 help:
 	@echo "MiniShell build system"
 	@echo ""
-	@echo "  make                 Build MiniShell"
-	@echo "  make build           Build MiniShell"
+	@echo "  make                 Build MiniShell and create ./shell"
+	@echo "  make build           Build MiniShell and create ./shell"
+	@echo "  make run             Build and run ./shell"
 	@echo "  make test            Build and run unit tests"
 	@echo "  make integration     Build and run integration tests"
-	@echo "  make check           Run unit + integration tests"
+	@echo "  make check           Run unit + integration tests and create ./shell"
 	@echo "  make debug           Build Debug configuration"
 	@echo "  make release         Build Release configuration"
 	@echo "  make asan            Build with ASan + UBSan"

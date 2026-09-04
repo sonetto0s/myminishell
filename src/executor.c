@@ -1,102 +1,176 @@
 #include "executor.h"
 #include "terminal.h"
 #include "sig.h"
-#include <signal.h>
 #include "job.h"
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <errno.h>
 #include "error.h"
 #include "log.h"
 #include "event.h"
-
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 static void run_process(Command *com);
 
-static void cleanup_pipeline(pid_t pgid)
+static void terminate_and_reap_child(pid_t pid)
 {
-    if (pgid <= 0)
+    if (pid <= 0)
         return;
-    kill(-pgid, SIGTERM);
+    if (kill(pid, SIGTERM) < 0 && errno != ESRCH)
+    {
+        log_error("failed terminate child %d", pid);
+    }
+
     while (1)
     {
-        pid_t ret = waitpid(-pgid, NULL, 0);
-        if (ret > 0)
-            continue;
+        pid_t ret = waitpid(pid, NULL, 0);
+        if (ret == pid)
+            return;
         if (ret < 0 && errno == EINTR)
             continue;
-        break;
+        if (ret < 0 && errno == ECHILD)
+            return;
+
+        if (ret < 0) log_error("failed reap child %d", pid);
+        return;
     }
 }
+
+static void terminate_and_reap_pipeline(pid_t *pids, int count)
+{
+    if (!pids || count <= 0)
+        return;
+    for (int i = 0; i < count; i++)
+    {
+        if (pids[i] <= 0)
+            continue;
+        if (kill(pids[i], SIGKILL) < 0 && errno != ESRCH)
+        {
+            log_error("failed terminate pipeline child %d", pids[i]);
+        }
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        if (pids[i] <= 0)
+            continue;
+        while (1)
+        {
+            pid_t ret = waitpid(pids[i], NULL, 0);
+
+            if (ret == pids[i])
+                break;
+            if (ret < 0 && errno == EINTR)
+                continue;
+            if (ret < 0 &&errno == ECHILD)
+                break;
+            if (ret < 0)
+                log_error("failed reap pipeline child %d", pids[i]);
+            break;
+        }
+    }
+}
+
+static int check_job_limit(ShellContext *ctx)
+{
+    if (!ctx)
+        return MiniShell_ERR_UNKNOWN;
+    int active = job_count_active(&ctx->jobs);
+    if (active >= ctx->config.max_job)
+    {
+        log_error("maximum active jobs reached: %d", ctx->config.max_job);
+        return MiniShell_ERR_JOB;
+    }
+    return MiniShell_OK;
+}
+
 int execute_command(Command *com, ShellContext *ctx)
 {
-    if(!com->next)
-        return execute_single(com,ctx);
-    else
-        return execute_pipeline(com,ctx);
+    if (!com || !ctx)
+        return MiniShell_ERR_UNKNOWN;
+
+    int ret = check_job_limit(ctx);
+    if (ret != MiniShell_OK)
+        return ret;
+
+    if (!com->next)
+        return execute_single(com, ctx);
+    return execute_pipeline(com, ctx);
 }
 
 int setredirect(Command *com)
 {
+    if (!com)
+        return MiniShell_ERR_UNKNOWN;
+
     if (com->redirect.output_file)
     {
         int flags;
-        if(com->redirect.append)
-        {
+        if (com->redirect.append)
             flags = O_WRONLY | O_CREAT | O_APPEND;
-        }
         else
-       {
-          flags = O_WRONLY | O_CREAT | O_TRUNC;
-       }
-          int fd = open(com->redirect.output_file, flags, 0644);
-          if (fd < 0)
-          {
-              log_error("open file failed: %s ", com->redirect.output_file);
-              return MiniShell_ERR_OPEN;
-          }
-        if (dup2(fd, STDOUT_FILENO) == -1)
+            flags = O_WRONLY | O_CREAT | O_TRUNC;
+
+        int fd = open(com->redirect.output_file, flags, 0644);
+
+        if (fd < 0)
+        {
+            log_error("open file failed: %s", com->redirect.output_file);
+            return MiniShell_ERR_OPEN;
+        }
+
+        if (dup2(fd, STDOUT_FILENO) < 0)
         {
             close(fd);
             log_error("dup2 failed");
             return MiniShell_ERR_DUP2;
         }
+
         close(fd);
     }
 
     if (com->redirect.input_file)
     {
-        int fd = open(com->redirect.input_file, O_RDONLY, 0644);
+        int fd = open(com->redirect.input_file, O_RDONLY);
         if (fd < 0)
         {
-            log_error("open file failed: %s ", com->redirect.input_file);
+            log_error("open file failed: %s", com->redirect.input_file);
             return MiniShell_ERR_OPEN;
         }
-        if (dup2(fd, STDIN_FILENO) == -1)
+
+        if (dup2(fd, STDIN_FILENO) < 0)
         {
             close(fd);
             log_error("dup2 failed");
             return MiniShell_ERR_DUP2;
         }
+
         close(fd);
     }
+
     return MiniShell_OK;
 }
 
 int execute_single(Command *com, ShellContext *ctx)
 {
-    int status;
+    if (!com || !ctx)
+        return MiniShell_ERR_UNKNOWN;
+
+    int status = 0;
     int terminal_active = terminal_is_initialized();
+
     pid_t pid = fork();
+
     if (pid < 0)
     {
         log_error("fork failed");
         return MiniShell_ERR_FORK;
     }
+
     if (pid == 0)
     {
         if (setpgid(0, 0) < 0)
@@ -104,170 +178,144 @@ int execute_single(Command *com, ShellContext *ctx)
             log_error("failed setpgid child");
             _exit(1);
         }
+
         if (setredirect(com) != MiniShell_OK)
         {
             log_error("redirect failed");
             _exit(1);
         }
+
         run_process(com);
     }
 
-
-    if (setpgid(pid, pid) < 0)
+    if (setpgid(pid, pid) < 0 && errno != EACCES)
     {
-        if (errno != EACCES)
-        {
-            log_error("failed setpgid parent");
-            return MiniShell_ERR_UNKNOWN;
-        }
+        log_error("failed setpgid parent");
+        terminate_and_reap_child(pid);
+        return MiniShell_ERR_UNKNOWN;
     }
 
     Job *job = job_add(&ctx->jobs, pid, com->argv[0]);
 
-    if (job == NULL)
+    if (!job)
     {
         log_error("failed add job");
-        kill(pid, SIGTERM);
-        waitpid(pid, NULL, 0);
-        return MiniShell_ERR_UNKNOWN;
+        terminate_and_reap_child(pid);
+        return MiniShell_ERR_JOB;
     }
 
     if (process_add(job, pid) < 0)
     {
         log_error("failed add process");
-        kill(pid, SIGTERM);
-        waitpid(pid, NULL, 0);
+        terminate_and_reap_child(pid);
         job_remove(&ctx->jobs, pid);
-        return MiniShell_ERR_UNKNOWN;
+        return MiniShell_ERR_JOB;
     }
 
     if (com->background)
-    {
         return MiniShell_OK;
-    }
 
-    if (terminal_active)
+    if (terminal_active &&terminal_set_foreground(pid) < 0)
     {
-        if (terminal_set_foreground(pid) < 0)
-        {
-            log_error("failed give terminal foreground");
-        }
+        log_error("failed give terminal foreground");
     }
 
     while (1)
     {
-        if (waitpid(pid, &status, WUNTRACED) < 0)
+        pid_t ret = waitpid(pid, &status, WUNTRACED);
+
+        if (ret == pid)
+            break;
+        if (ret < 0 && errno == EINTR)
+            continue;
+        if (ret < 0 &&errno == ECHILD)
         {
-            if (errno == EINTR)
-            {
-                continue;
-            }
-
-            log_error("failed wait");
-
-            if (terminal_active)
-                terminal_restore();
-
+            if (terminal_active) terminal_restore();
             job_remove(&ctx->jobs, pid);
+            log_error("child already reaped");
             return MiniShell_ERR_UNKNOWN;
         }
 
-        break;
+        if (ret < 0)
+        {
+            log_error("failed wait child");
+            terminate_and_reap_child(pid);
+            if (terminal_active) terminal_restore();
+            job_remove(&ctx->jobs, pid);
+            return MiniShell_ERR_UNKNOWN;
+        }
     }
 
     if (WIFSTOPPED(status))
     {
         job->status = JOB_STOPPED;
-        if (job->processes)
-        {
-            job->processes->status = PROCESS_STOPPED;
-        }
 
-        terminal_restore();
+        if (job->processes) job->processes->status = PROCESS_STOPPED;
+        if (terminal_active) terminal_restore();
         printf("\n[%d]+ Stopped %s\n", job->id, job->command);
         return MiniShell_OK;
     }
-    if (terminal_active)
-        terminal_restore();
+
+    if (terminal_active) terminal_restore();
 
     job_remove(&ctx->jobs, pid);
-    if (WIFEXITED(status))
-    {
-        return WEXITSTATUS(status);
-    }
 
-    if (WIFSIGNALED(status))
-    {
-        return 128 + WTERMSIG(status);
-    }
-
+    if (WIFEXITED(status)) return WEXITSTATUS(status);
+    if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
     return MiniShell_ERR_UNKNOWN;
 }
 
 int execute_pipeline(Command *com, ShellContext *ctx)
 {
+    if (!com || !ctx)
+        return MiniShell_ERR_UNKNOWN;
     Command *current = com;
     int pipe_fd = -1;
     int count = 0;
     int terminal_active = terminal_is_initialized();
     pid_t pids[MAX_PIPELINE];
+    for (int i = 0; i < MAX_PIPELINE; i++)
+        pids[i] = -1;
     pid_t pgid = 0;
     int status = 0;
     int last_status = 0;
+
     while (current)
     {
-        int pipefd[2];
+        int pipefd[2] = {-1, -1};
         if (count >= MAX_PIPELINE)
         {
             log_error("pipeline commands are too many");
-            cleanup_pipeline(pgid);
+            if (pipe_fd >= 0) close(pipe_fd);
+            terminate_and_reap_pipeline(pids, count);
             return MiniShell_ERR_UNKNOWN;
         }
-        if (current->next)
+
+        if (current->next &&pipe(pipefd) < 0)
         {
-            if (pipe(pipefd) < 0)
-            {
-                log_error("pipe create failed");
-
-                if (pipe_fd != -1)
-                    close(pipe_fd);
-
-                cleanup_pipeline(pgid);
-                return MiniShell_ERR_PIPE;
-            }
+            log_error("pipe create failed");
+            if (pipe_fd >= 0) close(pipe_fd);
+            terminate_and_reap_pipeline(pids, count);
+            return MiniShell_ERR_PIPE;
         }
+
         pid_t pid = fork();
 
         if (pid < 0)
         {
             log_error("fork failed");
 
-            if (current->next)
-            {
-                close(pipefd[0]);
-                close(pipefd[1]);
-            }
+            if (pipefd[0] >= 0) close(pipefd[0]);
+            if (pipefd[1] >= 0) close(pipefd[1]);
+            if (pipe_fd >= 0) close(pipe_fd);
 
-            if (pipe_fd != -1)
-                close(pipe_fd);
-
-            cleanup_pipeline(pgid);
+            terminate_and_reap_pipeline(pids, count);
             return MiniShell_ERR_FORK;
         }
 
-        if (pid > 0)
+        if (pid == 0)
         {
-            if (pgid == 0)
-                pgid = pid;
-
-            if (setpgid(pid, pgid) < 0 && errno != EACCES)
-                log_error("failed parent setpgid");
-
-            pids[count++] = pid;
-        }
-        else
-        {
-            pid_t child_pgid = (pgid == 0) ? getpid() : pgid;
+            pid_t child_pgid = pgid == 0 ? getpid() : pgid;
 
             if (setpgid(0, child_pgid) < 0)
             {
@@ -275,32 +323,24 @@ int execute_pipeline(Command *com, ShellContext *ctx)
                 _exit(1);
             }
 
-            if (pipe_fd != -1)
+            if (pipe_fd >= 0 &&dup2(pipe_fd, STDIN_FILENO) < 0)
             {
-                if (dup2(pipe_fd, STDIN_FILENO) < 0)
-                {
-                    log_error("dup2 stdin failed");
-                    _exit(127);
-                }
+                log_error("dup2 stdin failed");
+                _exit(127);
             }
 
-            if (current->next)
+            if (current->next &&dup2(pipefd[1], STDOUT_FILENO) < 0)
             {
-                if (dup2(pipefd[1], STDOUT_FILENO) < 0)
-                {
-                    log_error("dup2 stdout failed");
-                    _exit(127);
-                }
+                log_error("dup2 stdout failed");
+                _exit(127);
             }
 
-            if (pipe_fd != -1)
+            if (pipe_fd >= 0)
                 close(pipe_fd);
-
-            if (current->next)
-            {
+            if (pipefd[0] >= 0)
                 close(pipefd[0]);
+            if (pipefd[1] >= 0)
                 close(pipefd[1]);
-            }
 
             if (setredirect(current) != MiniShell_OK)
             {
@@ -311,47 +351,60 @@ int execute_pipeline(Command *com, ShellContext *ctx)
             run_process(current);
         }
 
+        pids[count++] = pid;
+
+        if (pgid == 0)
+            pgid = pid;
+
+        if (setpgid(pid, pgid) < 0 && errno != EACCES)
+        {
+            log_error("failed parent setpgid");
+        }
+
+        if (pipe_fd >= 0)
+            close(pipe_fd);
+        pipe_fd = -1;
+
         if (current->next)
         {
-            if (pipe_fd != -1)
-                close(pipe_fd);
-
-            pipe_fd = pipefd[0];
             close(pipefd[1]);
+            pipefd[1] = -1;
+            pipe_fd = pipefd[0];
+            pipefd[0] = -1;
         }
 
         current = current->next;
     }
 
-    if (pipe_fd != -1)
+    if (pipe_fd >= 0)
         close(pipe_fd);
 
     Job *job = job_add(&ctx->jobs, pgid, com->argv[0]);
 
-    if (job == NULL)
+    if (!job)
     {
-        cleanup_pipeline(pgid);
-        return MiniShell_ERR_UNKNOWN;
+        log_error("failed add pipeline job");
+        terminate_and_reap_pipeline(pids, count);
+        return MiniShell_ERR_JOB;
     }
 
     for (int i = 0; i < count; i++)
     {
         if (process_add(job, pids[i]) < 0)
         {
-            log_error("failed add process");
+            log_error("failed add pipeline process");
+            terminate_and_reap_pipeline(pids, count);
             job_remove(&ctx->jobs, pgid);
-            cleanup_pipeline(pgid);
-            return MiniShell_ERR_UNKNOWN;
+            return MiniShell_ERR_JOB;
         }
     }
 
     if (com->background)
         return MiniShell_OK;
 
-    if (terminal_active)
+    if (terminal_active &&terminal_set_foreground(pgid) < 0)
     {
-        if (terminal_set_foreground(pgid) < 0)
-            log_error("failed set pipeline foreground");
+        log_error("failed set pipeline foreground");
     }
 
     while (1)
@@ -362,40 +415,45 @@ int execute_pipeline(Command *com, ShellContext *ctx)
         {
             if (errno == EINTR)
                 continue;
-
+            if (errno == ECHILD)
+            {
+                if (terminal_active)
+                    terminal_restore();
+                job_remove(&ctx->jobs, pgid);
+                log_error("pipeline children already reaped");
+                return MiniShell_ERR_UNKNOWN;
+            }
             log_error("waitpid pipeline failed");
-            terminal_restore();
+            terminate_and_reap_pipeline(pids, count);
+            if (terminal_active)
+                terminal_restore();
             job_remove(&ctx->jobs, pgid);
             return MiniShell_ERR_UNKNOWN;
         }
 
         Process *process = job->processes;
-
         while (process && process->pid != ret)
             process = process->next;
 
-        if (process == NULL)
+        if (!process)
         {
             log_error("process not found in job");
-            terminal_restore();
+            terminate_and_reap_pipeline(pids, count);
+            if (terminal_active)
+                terminal_restore();
             job_remove(&ctx->jobs, pgid);
             return MiniShell_ERR_UNKNOWN;
         }
 
         if (WIFSTOPPED(status))
-        {
             process->status = PROCESS_STOPPED;
-        }
         else if (WIFEXITED(status) || WIFSIGNALED(status))
-        {
             process->status = PROCESS_DONE;
-        }
 
         if (ret == pids[count - 1])
             last_status = status;
 
         int running = 0;
-
         process = job->processes;
 
         while (process)
@@ -413,8 +471,10 @@ int execute_pipeline(Command *com, ShellContext *ctx)
             break;
     }
 
-    if (terminal_restore() < 0)
+    if (terminal_active &&terminal_restore() < 0)
+    {
         log_error("failed restore terminal");
+    }
 
     Process *process = job->processes;
     int all_done = 1;
@@ -437,19 +497,14 @@ int execute_pipeline(Command *com, ShellContext *ctx)
 
         if (WIFEXITED(last_status))
             return WEXITSTATUS(last_status);
-
         if (WIFSIGNALED(last_status))
             return 128 + WTERMSIG(last_status);
-
         return MiniShell_ERR_UNKNOWN;
     }
 
     job->status = JOB_STOPPED;
 
-    printf("\n[%d]+ Stopped %s\n",
-           job->id,
-           job->command);
-
+    printf("\n[%d]+ Stopped %s\n", job->id, job->command);
     return MiniShell_OK;
 }
 
@@ -461,3 +516,5 @@ static void run_process(Command *com)
     log_error("execute command failed: %s", com->argv[0]);
     _exit(127);
 }
+
+

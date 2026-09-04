@@ -8,6 +8,9 @@ void test_shell_command_not_found(void);
 void test_shell_redirect_output(void);
 void test_shell_redirect_append(void);
 void test_shell_redirect_input(void);
+void test_shell_builtin_redirect_restore_success(void);
+void test_shell_builtin_redirect_restore_failure(void);
+void test_shell_external_redirect_failure(void);
 void test_shell_pipeline_two_commands(void);
 void test_shell_pipeline_three_commands(void);
 void test_shell_exit_status_success(void);
@@ -33,6 +36,9 @@ int main(void)
         {"shell_redirect_output", test_shell_redirect_output},
         {"shell_redirect_append", test_shell_redirect_append},
         {"shell_redirect_input", test_shell_redirect_input},
+        {"shell_builtin_redirect_restore_success", test_shell_builtin_redirect_restore_success},
+        {"shell_builtin_redirect_restore_failure", test_shell_builtin_redirect_restore_failure},
+        {"shell_external_redirect_failure", test_shell_external_redirect_failure},
         {"shell_pipeline_two_commands", test_shell_pipeline_two_commands},
         {"shell_pipeline_three_commands", test_shell_pipeline_three_commands},
         {"shell_exit_status_success", test_shell_exit_status_success},
@@ -52,5 +58,6 @@ int main(void)
     test_run(tests, (int)(sizeof(tests) / sizeof(tests[0])));
     test_report();
     printf("======= Integration Test Finished =======\n");
+
     return test_result();
 }
