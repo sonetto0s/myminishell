@@ -3,6 +3,7 @@
 #include "parser.h"
 #include "shell_context.h"
 #include "test_framework.h"
+#include <stdio.h>
 
 void test_parser_basic(void)
 {
@@ -240,5 +241,70 @@ void test_parser_redirect_per_pipeline_command(void)
         }
     }
     command_free(cmd);
+    shell_context_destroy(&ctx);
+}
+
+
+void test_parser_token_too_long(void)
+{
+    ShellContext ctx;
+    shell_context_init(&ctx);
+
+    char input[TOKEN_SIZE + 1];
+
+    memset(input, 'a', TOKEN_SIZE);
+    input[TOKEN_SIZE] = '\0';
+
+    Command *cmd = parse_line(input, &ctx);
+
+    TEST_ASSERT_NULL(cmd);
+    TEST_ASSERT_EQ(ctx.last_exit_status, 2);
+
+    shell_context_destroy(&ctx);
+}
+
+void test_parser_too_many_tokens(void)
+{
+    ShellContext ctx;
+    shell_context_init(&ctx);
+
+    char input[1024] = {0};
+
+    size_t used = 0;
+
+    for (int i = 0; i < MAX_TOKEN + 1; i++) {
+        int written = snprintf(input + used,
+                               sizeof(input) - used,
+                               "x%s",
+                               i == MAX_TOKEN ? "" : " ");
+
+        if (written < 0 ||
+            (size_t)written >= sizeof(input) - used) {
+            break;
+        }
+
+        used += (size_t)written;
+    }
+
+    Command *cmd = parse_line(input, &ctx);
+
+    TEST_ASSERT_NULL(cmd);
+    TEST_ASSERT_EQ(ctx.last_exit_status, 2);
+
+    shell_context_destroy(&ctx);
+}
+
+void test_parser_background_must_be_last(void)
+{
+    ShellContext ctx;
+    shell_context_init(&ctx);
+
+    char input[] = "sleep 1 & echo bad";
+
+    Command *cmd = parse_line(input, &ctx);
+
+    TEST_ASSERT_NULL(cmd);
+    TEST_ASSERT_EQ(ctx.last_exit_status, 2);
+
     shell_context_destroy(&ctx);
 }

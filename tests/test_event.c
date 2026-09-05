@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "event.h"
 #include "test_framework.h"
-
+#include "sig.h"
 
 void test_event_init(void)
 {
@@ -170,7 +170,35 @@ void test_event_close_in_child(void)
 
 
 
+void test_event_shutdown_signal_safety(void)
+{
+    pid_t pid = fork();
 
+    TEST_ASSERT(pid >= 0);
+
+    if (pid < 0) return;
+
+    if (pid == 0) {
+        if (event_init() < 0)
+            _exit(1);
+
+        if (signal_init() < 0)
+            _exit(2);
+
+        signal_shutdown();
+        event_shut();
+
+        raise(SIGINT);
+
+        _exit(0);
+    }
+
+    int status = 0;
+
+    TEST_ASSERT_EQ(waitpid(pid, &status, 0), pid);
+    TEST_ASSERT(WIFEXITED(status));
+    TEST_ASSERT_EQ(WEXITSTATUS(status), 0);
+}
 
 
 

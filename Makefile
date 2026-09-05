@@ -16,14 +16,15 @@ COMMON_CFLAGS := \
 	-Wall \
 	-Wextra \
 	-Wpedantic \
-	-Wformat=2
+	-Wformat=2 \
+	-Wstrict-prototypes
 
 STRICT_CFLAGS := \
 	$(COMMON_CFLAGS) \
 	-Werror
 
 CFLAGS ?= $(COMMON_CFLAGS) -g -O0
-
+CPPFLAGS ?=
 CPPFLAGS_COMMON := \
 	-D_POSIX_C_SOURCE=200809L
 
@@ -120,9 +121,11 @@ INTEGRATION_SRC := \
 	$(INTEGRATION_DIR)/test_shell_status.c \
 	$(INTEGRATION_DIR)/test_shell_background.c \
 	$(INTEGRATION_DIR)/test_shell_pty.c \
+	$(INTEGRATION_DIR)/test_shell_input.c \
 	$(TEST_DIR)/test_framework.c
 
 APP_CPPFLAGS := \
+	$(CPPFLAGS) \
 	$(CPPFLAGS_COMMON) \
 	-Iinclude \
 	-I$(COMMON_DIR) \
@@ -267,6 +270,7 @@ $(BUILD_DIR)/$(INTEGRATION_DIR)/%.o: $(INTEGRATION_DIR)/%.c
 
 test: $(TEST_TARGET)
 	@echo "  TEST    $(TEST_TARGET)"
+	MINISHELL_TEST_DIR="./$(BUILD_DIR)" \
 	./$(TEST_TARGET)
 
 integration: $(TARGET) $(INTEGRATION_TARGET)

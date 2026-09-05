@@ -2,6 +2,7 @@
 #define JOB_H
 
 #include <sys/types.h>
+#include <termios.h>
 
 typedef enum {
     JOB_RUNNING,
@@ -29,11 +30,12 @@ typedef struct Job {
     JobStatus status;
     char command[128];
     Process *processes;
+    struct termios terminal_modes;
+    int terminal_modes_valid;
     struct Job *next;
 } Job;
 
-typedef struct
-{
+typedef struct {
     Job *head;
     int nextid;
 } JobManager;
@@ -54,5 +56,4 @@ void job_remove(JobManager *manager, pid_t pgid);
 void job_destroy(JobManager *manager);
 void job_shutdown(JobManager *manager);
 
-#endif 
-
+#endif

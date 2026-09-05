@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/prctl.h>
 
 static void sleep_10ms(void)
 {
@@ -951,3 +952,123 @@ void test_job_shutdown_multiple_processes(void)
     TEST_ASSERT_EQ(errno, ECHILD);
 }
 
+void test_job_shutdown_same_group_descendant(void)
+{
+    int pid_pipe[2];
+    int pipe_ret = pipe(pid_pipe);
+    TEST_ASSERT_EQ(pipe_ret, 0);
+
+    if (pipe_ret < 0) return;
+
+    if (prctl(PR_SET_CHILD_SUBREAPER, 1) < 0) {
+        close(pid_pipe[0]);
+        close(pid_pipe[1]);
+        TEST_ASSERT(0);
+        return;
+    }
+
+    pid_t leader = fork();
+    TEST_ASSERT(leader >= 0);
+
+    if (leader < 0) {
+        close(pid_pipe[0]);
+        close(pid_pipe[1]);
+        prctl(PR_SET_CHILD_SUBREAPER, 0);
+        return;
+    }
+
+    if (leader == 0) {
+        close(pid_pipe[0]);
+
+        if (setpgid(0, 0) < 0)
+            _exit(1);
+
+        pid_t descendant = fork();
+        if (descendant < 0)
+            _exit(2);
+
+        if (descendant == 0) {
+            signal(SIGTERM, SIG_IGN);
+
+            pid_t self = getpid();
+            ssize_t sent;
+
+            do {
+                sent = write(pid_pipe[1], &self, sizeof(self));
+            } while (sent < 0 && errno == EINTR);
+
+            close(pid_pipe[1]);
+
+            if (sent != (ssize_t)sizeof(self))
+                _exit(3);
+
+            for (;;) pause();
+        }
+
+        close(pid_pipe[1]);
+
+        for (;;) pause();
+    }
+
+    close(pid_pipe[1]);
+
+    if (setpgid(leader, leader) < 0 && errno != EACCES) {
+        kill(leader, SIGKILL);
+        waitpid(leader, NULL, 0);
+        close(pid_pipe[0]);
+        prctl(PR_SET_CHILD_SUBREAPER, 0);
+        TEST_ASSERT(0);
+        return;
+    }
+
+    pid_t descendant = -1;
+    ssize_t received;
+
+    do {
+        received = read(pid_pipe[0], &descendant, sizeof(descendant));
+    } while (received < 0 && errno == EINTR);
+
+    close(pid_pipe[0]);
+
+    TEST_ASSERT_EQ(received, (ssize_t)sizeof(descendant));
+
+    if (received != (ssize_t)sizeof(descendant)) {
+        kill(-leader, SIGKILL);
+        waitpid(leader, NULL, 0);
+        prctl(PR_SET_CHILD_SUBREAPER, 0);
+        return;
+    }
+
+    JobManager manager;
+    jobmanager_init(&manager);
+
+    Job *job = job_add(&manager, leader, "same_group_descendant");
+    TEST_ASSERT_NOT_NULL(job);
+
+    if (!job) {
+        kill(-leader, SIGKILL);
+        waitpid(leader, NULL, 0);
+        waitpid(descendant, NULL, 0);
+        prctl(PR_SET_CHILD_SUBREAPER, 0);
+        return;
+    }
+
+    TEST_ASSERT_EQ(process_add(job, leader), 0);
+
+    job_shutdown(&manager);
+
+    TEST_ASSERT_NULL(manager.head);
+
+    int descendant_status = 0;
+    pid_t reaped;
+
+    do {
+        reaped = waitpid(descendant, &descendant_status, 0);
+    } while (reaped < 0 && errno == EINTR);
+
+    TEST_ASSERT_EQ(reaped, descendant);
+    TEST_ASSERT(WIFSIGNALED(descendant_status));
+    TEST_ASSERT_EQ(WTERMSIG(descendant_status), SIGKILL);
+
+    prctl(PR_SET_CHILD_SUBREAPER, 0);
+}

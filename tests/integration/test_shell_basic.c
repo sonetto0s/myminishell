@@ -91,3 +91,72 @@ void test_shell_command_not_found(void)
     TEST_ASSERT(WEXITSTATUS(status) != 0);
     free(output);
 }
+
+
+void test_shell_builtin_pipeline_rejected(void)
+{
+    char *output = NULL;
+    int status = 0;
+
+    int ret = shell_run_script(
+        "pwd | wc -c\n",
+        &output,
+        &status
+    );
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0)
+        return;
+
+    TEST_ASSERT_NOT_NULL(output);
+
+    if (!output)
+        return;
+
+    TEST_ASSERT(
+        strstr(
+            output,
+            "builtin commands in pipelines are not supported"
+        ) != NULL
+    );
+
+    TEST_ASSERT(WIFEXITED(status));
+    TEST_ASSERT_EQ(WEXITSTATUS(status), 1);
+
+    free(output);
+}
+
+void test_shell_builtin_background_rejected(void)
+{
+    char *output = NULL;
+    int status = 0;
+
+    int ret = shell_run_script(
+        "pwd &\n",
+        &output,
+        &status
+    );
+
+    TEST_ASSERT_EQ(ret, 0);
+
+    if (ret != 0)
+        return;
+
+    TEST_ASSERT_NOT_NULL(output);
+
+    if (!output)
+        return;
+
+    TEST_ASSERT(
+        strstr(
+            output,
+            "background builtin commands are not supported"
+        ) != NULL
+    );
+
+    TEST_ASSERT(WIFEXITED(status));
+    TEST_ASSERT_EQ(WEXITSTATUS(status), 1);
+
+    free(output);
+}

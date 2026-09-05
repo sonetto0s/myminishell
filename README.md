@@ -1,7 +1,7 @@
 # myminishell
 
 ## 项目简介
-
+👋👋
 这是一个基于Linux用户态实现的MiniShell,主要用来实现命令解析、进程控制、管道、重定向、Job Control、Signal/Event等功能,以此深入学习Linux系统编程相关机制🙃
 项目目前已逐步增加了模块化、配置、日志、错误处理、Job管理等多项工程化能力.后续V1.6开始迁移至ARM Linux/Orange Pi环境,并逐渐向嵌入式Linux设备管理终端方向扩展.
 
@@ -9,7 +9,7 @@
 
 - OS: Ubuntu 22.04
 - compiler: GCC
-- 编译工具: Make
+- 编译工具: GNU Make / CMake
 - 编程语言: C11
 
 ## 当前版本:V1.5 Engineering Release
@@ -18,9 +18,12 @@
 
 V1.5:
 - 优化signal/event/terminal/job  control
-- 修缮资源生命周期管理
+- 完善Foreground/Background Process Group管理
 - 引入自动化测试/Sanitizer/Valgrind
 - 新增CI/arm linux交叉编译链
+- 引入ASan/LSan/UBSan/Valgrind/cppcheck等检查流程
+- 新增CMake构建并验证
+
 
 V1.4:
 - 增加process groups
@@ -178,7 +181,7 @@ ls -l
 echo hello > output.txt
 echo world >> output.txt
 cat < output.txt
-printf "a\nb\nc\n" | grep . | wc -l
+seq 3 | grep 2 | wc -l
 sleep 10 &
 
 当前内建命令:
@@ -341,7 +344,6 @@ make
 ```
 Makefile
 make test
-./test
 ```
 
 运行操作:
@@ -371,7 +373,30 @@ make strict
 -Wpedantic
 -Wformat=2
 -Werror
+-Wstrict-prototypes
 ```
+## CMake
+
+Debug构建:
+
+```bash
+cmake -S . -B build/cmake-debug \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DMINISHELL_WARNINGS_AS_ERRORS=ON
+cmake --build build/cmake-debug --parallel
+ctest --test-dir build/cmake-debug --output-on-failure
+```
+
+真正源码树外构建:
+
+```bash
+cmake -S . -B /tmp/minishell-build \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DMINISHELL_WARNINGS_AS_ERRORS=ON
+cmake --build /tmp/minishell-build --parallel
+ctest --test-dir /tmp/minishell-build --output-on-failure
+```
+
 ## Test说明
 
 完整普通测试:
@@ -457,6 +482,7 @@ docs/test.md
     │   ├── test_integration_main.c
     │   ├── test_shell_background.c
     │   ├── test_shell_basic.c
+    │   ├── test_shell_input.c
     │   ├── test_shell_pipeline.c
     │   ├── test_shell_pty.c
     │   ├── test_shell_redirect.c
@@ -482,17 +508,23 @@ docs/test.md
 ```
 
 ## 技术栈
-
-- C 语言(C11)
-- Linux 应用/系统编程
-- 进程管理机制
-- fork/exec/wait等基础函数调用
-- Pipe IPC通讯
-- Signal 处理方式
-- select 监听机制(后续升级若情况需要可能会引入epoll)
-- Makefile
-- Git
-- GDB 调试 -->
+- C语言(C11)
+- Linux应用/系统编程
+- fork/exec/wait/waitpid
+- Process Group / Job Control
+- Pipe IPC
+- Signal
+- self-pipe
+- select
+- TTY/termios
+- GNU Make
+- CMake
+- GDB
+- Sanitizer
+- Valgrind
+- cppcheck
+- Git/GitHub Actions
+- ARM64 Cross Compile
 
 ## 后续方向
 
@@ -517,7 +549,7 @@ V1.2 Basic Stable                    OK
 V1.3 Stability                       OK
 V1.4 Unix Depth                      OK
 
-V1.5 Engineering Release             <-this stage
+V1.5 Engineering Release             OK
  ├── Correctness / Build Baseline    OK
  ├── Test Framework                  OK
  ├── Unit Test Expansion             OK
@@ -529,10 +561,10 @@ V1.5 Engineering Release             <-this stage
  ├── Documentation                   OK
  ├── CI                              OK
  ├── ARM-ready Build Interface       OK
- ├── CMake Build Parity
- └── Release Candidate Audit
+ ├── CMake Build Parity              OK
+ └── Release Candidate Audit         OK
 
-V1.6 ARM / Orange Pi
+V1.6 ARM / Orange Pi                 (it is coming...🙃)
 V2.0 Embedded Device Terminal
 ```
 

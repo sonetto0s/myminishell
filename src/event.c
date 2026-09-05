@@ -85,17 +85,18 @@ int event_drain(void)
 
 void event_shut(void)
 {
-    if (event_pipe[0] >= 0) {
-        close(event_pipe[0]);
-        event_pipe[0] = -1;
+    if (event_pipe[1] >= 0) {
+        int fd = event_pipe[1];
+        event_pipe[1] = -1;
+        close(fd);
     }
 
-    if (event_pipe[1] >= 0) {
-        close(event_pipe[1]);
-        event_pipe[1] = -1;
+    if (event_pipe[0] >= 0) {
+        int fd = event_pipe[0];
+        event_pipe[0] = -1;
+        close(fd);
     }
 }
-
 void event_close_in_child(void)
 {
     event_shut();

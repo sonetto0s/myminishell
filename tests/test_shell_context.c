@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <string.h>
 
 void test_shell_context_init(void)
 {
@@ -15,7 +16,8 @@ void test_shell_context_init(void)
     TEST_ASSERT_EQ(ctx.last_exit_status, 0);
     TEST_ASSERT_NULL(ctx.jobs.head);
     TEST_ASSERT_EQ(ctx.jobs.nextid, 1);
-    TEST_ASSERT_STR_EQ(ctx.config_file, "config/config.conf");
+    TEST_ASSERT(strstr(ctx.config_file,
+                   "/config/config.conf") != NULL);
     shell_context_destroy(&ctx);
 }
 
@@ -78,5 +80,3 @@ void test_shell_context_destroy_reaps_jobs(void)
     TEST_ASSERT_EQ(ret, -1);
     TEST_ASSERT_EQ(errno, ECHILD);
 }
-
-

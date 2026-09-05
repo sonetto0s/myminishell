@@ -81,6 +81,16 @@ void test_signal_reset_child_defaults(void);
 void test_job_exit_status_last_process(void);
 void test_job_wait_foreground_pipeline_status(void);
 void test_job_wait_foreground_whole_group_stop(void);
+void test_parser_token_too_long(void);
+void test_parser_too_many_tokens(void);
+void test_parser_background_must_be_last(void);
+void test_dispatcher_builtin_pipeline_rejected(void);
+void test_dispatcher_builtin_background_rejected(void);
+void test_config_transaction_failure(void);
+void test_config_directory_load_failure(void);
+void test_system_info_collect_overwrite(void);
+void test_job_shutdown_same_group_descendant(void);
+void test_event_shutdown_signal_safety(void);
 
 int main(void)
 {
@@ -166,8 +176,17 @@ int main(void)
             {"job_exit_status_last_process", test_job_exit_status_last_process},
             {"job_wait_foreground_pipeline_status", test_job_wait_foreground_pipeline_status},
             {"job_wait_foreground_whole_group_stop", test_job_wait_foreground_whole_group_stop},
+            {"parser_token_too_long", test_parser_token_too_long},
+            {"parser_too_many_tokens", test_parser_too_many_tokens},
+            {"parser_background_must_be_last", test_parser_background_must_be_last},
+            {"dispatcher_builtin_pipeline_rejected", test_dispatcher_builtin_pipeline_rejected},
+            {"dispatcher_builtin_background_rejected", test_dispatcher_builtin_background_rejected},
+            {"config_transaction_failure", test_config_transaction_failure},
+            {"config_directory_load_failure", test_config_directory_load_failure},
+            {"job_shutdown_same_group_descendant", test_job_shutdown_same_group_descendant},
+            {"event_shutdown_signal_safety", test_event_shutdown_signal_safety},
+            {"system_info_collect_overwrite", test_system_info_collect_overwrite},
         };
-
     printf("======= MiniShell Test =======\n");
     test_run(tests, sizeof(tests) / sizeof(tests[0]));
     test_report();

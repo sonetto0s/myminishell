@@ -6,9 +6,8 @@
 #define SIGNAL_EVENT_INTERRUPT (1 << 1)
 
 int signal_init(void);
+void signal_shutdown(void);
 int signal_take_events(void);
-
 void signal_reset_child(void);
 
 #endif
-

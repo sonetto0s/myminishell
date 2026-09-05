@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <termios.h>
 
 #define JOB_SHUTDOWN_RETRY_COUNT 50
 #define JOB_SHUTDOWN_WAIT_NS 10000000L
@@ -183,22 +184,22 @@ static int jobmanager_try_reap_all(JobManager *manager)
     return all_done;
 }
 
-static void signal_job_processes(Job *job, int sig)
-{
-    if (!job) return;
+// static void signal_job_processes(Job *job, int sig)
+// {
+//     if (!job) return;
 
-    Process *process = job->processes;
+//     Process *process = job->processes;
 
-    while (process) {
-        if (process->status != PROCESS_DONE) {
-            if (kill(process->pid, sig) < 0 && errno != ESRCH) {
-                log_error("failed send signal %d to process %d", sig, process->pid);
-            }
-        }
+//     while (process) {
+//         if (process->status != PROCESS_DONE) {
+//             if (kill(process->pid, sig) < 0 && errno != ESRCH) {
+//                 log_error("failed send signal %d to process %d", sig, process->pid);
+//             }
+//         }
 
-        process = process->next;
-    }
-}
+//         process = process->next;
+//     }
+// }
 
 static void continue_stopped_job(Job *job)
 {
@@ -219,7 +220,6 @@ static void continue_stopped_job(Job *job)
 
     job_update_status(job);
 }
-
 void job_init(Job *job)
 {
     if (!job) return;
@@ -229,8 +229,11 @@ void job_init(Job *job)
     job->status = JOB_RUNNING;
     memset(job->command, 0, sizeof(job->command));
     job->processes = NULL;
+    memset(&job->terminal_modes, 0, sizeof(job->terminal_modes));
+    job->terminal_modes_valid = 0;
     job->next = NULL;
 }
+
 
 void jobmanager_init(JobManager *manager)
 {
@@ -541,44 +544,40 @@ void job_shutdown(JobManager *manager)
     Job *job = manager->head;
 
     while (job) {
-        if (job->status == JOB_STOPPED) continue_stopped_job(job);
+        if (job->status == JOB_STOPPED)
+            continue_stopped_job(job);
+
         job = job->next;
     }
 
     job = manager->head;
 
     while (job) {
-        if (job->status != JOB_DONE) {
-            if (job->pgid > 0) {
-                if (kill(-job->pgid, SIGTERM) < 0 && errno != ESRCH) {
-                    log_error("failed terminate job %d during shutdown", job->id);
-                }
+        if (job->status != JOB_DONE && job->pgid > 0) {
+            if (kill(-job->pgid, SIGTERM) < 0 && errno != ESRCH) {
+                log_error("failed terminate job %d pgid %d during shutdown: %s",
+                          job->id, job->pgid, strerror(errno));
             }
-
-            signal_job_processes(job, SIGTERM);
         }
 
         job = job->next;
     }
 
     for (int i = 0; i < JOB_SHUTDOWN_RETRY_COUNT; i++) {
-        if (jobmanager_try_reap_all(manager)) break;
+        if (jobmanager_try_reap_all(manager))
+            break;
+
         shutdown_sleep();
     }
 
     job = manager->head;
 
     while (job) {
-        Process *process = job->processes;
-
-        while (process) {
-            if (!process_try_reap(process)) {
-                if (kill(process->pid, SIGKILL) < 0 && errno != ESRCH) {
-                    log_error("failed kill process %d during shutdown", process->pid);
-                }
+        if (job->pgid > 0) {
+            if (kill(-job->pgid, SIGKILL) < 0 && errno != ESRCH) {
+                log_error("failed kill job %d pgid %d during shutdown: %s",
+                          job->id, job->pgid, strerror(errno));
             }
-
-            process = process->next;
         }
 
         job = job->next;
@@ -600,6 +599,4 @@ void job_shutdown(JobManager *manager)
 
     job_destroy(manager);
 }
-
-
 

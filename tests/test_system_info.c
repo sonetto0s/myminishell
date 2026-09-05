@@ -24,6 +24,7 @@ void test_system_info_fields(void)
     TEST_ASSERT(info.kernel[0] != '\0');
     TEST_ASSERT(info.hostname[0] != '\0');
     TEST_ASSERT(info.architecture[0] != '\0');
+    TEST_ASSERT(info.cpu_model[0] != '\0');
     TEST_ASSERT(info.mem_total > 0);
     TEST_ASSERT(info.mem_available > 0);
     TEST_ASSERT(info.mem_available <= info.mem_total);

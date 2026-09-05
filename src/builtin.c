@@ -40,29 +40,34 @@ int builtin_cd(Command *cmd, struct ShellContext *ctx)
 
     return MiniShell_OK;
 }
-
 int builtin_pwd(Command *cmd, struct ShellContext *ctx)
 {
     (void)cmd;
     (void)ctx;
 
-    char buffer[100];
+    char *cwd = getcwd(NULL, 0);
 
-    if (getcwd(buffer, sizeof(buffer))) {
-        printf("%s\n", buffer);
-        return MiniShell_OK;
+    if (!cwd) {
+        perror("getcwd");
+        return MiniShell_ERR_UNKNOWN;
     }
 
-    perror("getcwd");
-    return MiniShell_ERR_UNKNOWN;
+    printf("%s\n", cwd);
+    free(cwd);
+
+    return MiniShell_OK;
 }
 
 int builtin_exit(Command *cmd, struct ShellContext *ctx)
 {
     (void)cmd;
 
+    if (!ctx)
+        return MiniShell_ERR_UNKNOWN;
+
     ctx->running = 0;
-    return MiniShell_OK;
+
+    return ctx->last_exit_status;
 }
 
 int builtin_help(Command *cmd, struct ShellContext *ctx)
@@ -118,7 +123,9 @@ int builtin_fg(Command *cmd, struct ShellContext *ctx)
     Job *job = ctx->jobs.head;
 
     while (job) {
-        if (job->status == JOB_RUNNING || job->status == JOB_STOPPED) break;
+        if (job->status == JOB_RUNNING || job->status == JOB_STOPPED)
+            break;
+
         job = job->next;
     }
 
@@ -130,6 +137,14 @@ int builtin_fg(Command *cmd, struct ShellContext *ctx)
     if (terminal_set_foreground(job->pgid) < 0) {
         log_error("failed set foreground");
         return MiniShell_ERR_UNKNOWN;
+    }
+
+    if (job->terminal_modes_valid) {
+        if (terminal_set_modes(&job->terminal_modes) < 0) {
+            log_error("failed restore job terminal modes");
+            terminal_restore();
+            return MiniShell_ERR_UNKNOWN;
+        }
     }
 
     if (job->status == JOB_STOPPED) {
@@ -144,8 +159,15 @@ int builtin_fg(Command *cmd, struct ShellContext *ctx)
         return MiniShell_ERR_UNKNOWN;
     }
 
+    if (job->status == JOB_STOPPED) {
+        if (terminal_get_modes(&job->terminal_modes) == 0)
+            job->terminal_modes_valid = 1;
+    }
+
     if (terminal_restore() < 0) {
         log_error("failed restore terminal");
+        ctx->running = 0;
+        return MiniShell_ERR_UNKNOWN;
     }
 
     if (job->status == JOB_STOPPED) {
@@ -153,16 +175,15 @@ int builtin_fg(Command *cmd, struct ShellContext *ctx)
         return MiniShell_OK;
     }
 
-    if (job->status != JOB_DONE) return MiniShell_ERR_UNKNOWN;
+    if (job->status != JOB_DONE)
+        return MiniShell_ERR_UNKNOWN;
 
     int status = job_exit_status(job);
     pid_t pgid = job->pgid;
 
     job_remove(&ctx->jobs, pgid);
 
-    if (status < 0) return MiniShell_ERR_UNKNOWN;
-
-    return status;
+    return status < 0 ? MiniShell_ERR_UNKNOWN : status;
 }
 
 int builtin_bg(Command *cmd, struct ShellContext *ctx)
@@ -195,13 +216,21 @@ int builtin_reload(Command *cmd, struct ShellContext *ctx)
 {
     (void)cmd;
 
-    if (config_load(&ctx->config, ctx->config_file) != MiniShell_OK) {
-        log_error("failed reload config");
+    int ret =
+        config_load(&ctx->config,
+                    ctx->config_file);
+
+    if (ret != MiniShell_OK) {
+        log_error("failed reload config: %s",
+                  ctx->config_file);
+
         return MiniShell_ERR_UNKNOWN;
     }
 
-    if (ctx->config.debug) log_setlevel(LOG_DEBUG);
-    else log_setlevel(LOG_INFO);
+    if (ctx->config.debug)
+        log_setlevel(LOG_DEBUG);
+    else
+        log_setlevel(LOG_INFO);
 
     printf("config reloaded\n");
 
