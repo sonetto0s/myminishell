@@ -1,197 +1,414 @@
 #include "parser.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-static int token_push(TokenList *list, TokenType type, const char *text)
+#define TOKENIZE_OK 0
+#define TOKENIZE_TOO_MANY -1
+#define TOKENIZE_TOO_LONG -2
+
+static int token_push(TokenList *list, TokenType type,
+                      const char *text, size_t length)
 {
     if (list->count >= MAX_TOKEN)
-    {
-        return -1;
-    }
+        return TOKENIZE_TOO_MANY;
+
+    if (length >= TOKEN_SIZE)
+        return TOKENIZE_TOO_LONG;
+
     list->token[list->count].type = type;
-    strncpy(list->token[list->count].text, text, TOKEN_SIZE - 1);
-    list->token[list->count].text[TOKEN_SIZE - 1] = '\0';
+
+    memcpy(list->token[list->count].text,
+           text,
+           length);
+
+    list->token[list->count].text[length] = '\0';
+
     list->count++;
-    return 0;
+
+    return TOKENIZE_OK;
 }
 
 static int is_special(char c)
 {
-    return c == '>' || c == '<' || c == '|' || c == '&';
+    return c == '>' ||
+           c == '<' ||
+           c == '|' ||
+           c == '&';
 }
 
-Command *parse_line(char *line,ShellContext *ctx)
+static Command *tokenize_fail(ShellContext *ctx, int result)
 {
+    if (result == TOKENIZE_TOO_LONG)
+        fprintf(stderr,
+                "minishell: syntax error: token is too long\n");
+    else
+        fprintf(stderr,
+                "minishell: syntax error: too many tokens\n");
+
+    if (ctx)
+        ctx->last_exit_status = 2;
+
+    return NULL;
+}
+
+static Command *syntax_fail(ShellContext *ctx,
+                            Command *head,
+                            const char *message)
+{
+    fprintf(stderr,
+            "minishell: syntax error: %s\n",
+            message);
+
+    if (ctx)
+        ctx->last_exit_status = 2;
+
+    command_free(head);
+
+    return NULL;
+}
+
+static Command *memory_fail(ShellContext *ctx,
+                            Command *head)
+{
+    fprintf(stderr,
+            "minishell: memory allocation failed\n");
+
+    if (ctx)
+        ctx->last_exit_status = 1;
+
+    command_free(head);
+
+    return NULL;
+}
+
+Command *parse_line(char *line, ShellContext *ctx)
+{
+    if (!line)
+        return NULL;
+
     TokenList list;
-    tokenize(line,&list);
+
+    int result = tokenize(line, &list);
+
+    if (result != TOKENIZE_OK)
+        return tokenize_fail(ctx, result);
+
     if (list.count == 0)
         return NULL;
-    return build_command(&list,ctx);
+
+    return build_command(&list, ctx);
 }
 
-void tokenize(char *line,TokenList *list)
+int tokenize(char *line, TokenList *list)
 {
+    if (!line || !list)
+        return TOKENIZE_TOO_MANY;
+
     list->count = 0;
+
     char *p = line;
-    while (*p)
-    {
+
+    while (*p) {
         while (isspace((unsigned char)*p))
             p++;
 
         if (*p == '\0')
             break;
 
-        if (*p == '>')
-        {
-            if (*(p + 1) == '>')
-            {
-                if (token_push(list, TOKEN_REDIRECT_APPEND, ">>") < 0)
-                    return;
+        if (*p == '>') {
+            if (*(p + 1) == '>') {
+                int result =
+                    token_push(list,
+                               TOKEN_REDIRECT_APPEND,
+                               p,
+                               2);
+
+                if (result != TOKENIZE_OK)
+                    return result;
+
                 p += 2;
-            }
-            else
-            {
-                if (token_push(list, TOKEN_REDIRECT_OUT, ">") < 0)
-                    return;
+            } else {
+                int result =
+                    token_push(list,
+                               TOKEN_REDIRECT_OUT,
+                               p,
+                               1);
+
+                if (result != TOKENIZE_OK)
+                    return result;
+
                 p++;
             }
+
             continue;
         }
-        if (*p == '<')
-        {
-            if (token_push(list, TOKEN_REDIRECT_IN, "<") < 0)
-                return;
-            p++;
-            continue;
-        }
-        if (*p == '|')
-        {
-            if (token_push(list, TOKEN_PIPE, "|") < 0)
-                return;
-            p++;
-            continue;
-        }
-        if (*p == '&')
-        {
-            if (token_push(list, TOKEN_BACKGROUND, "&") < 0)
-                return;
-            p++;
-            continue;
-        }
-        if (list->count >= MAX_TOKEN)
-            return;
-        list->token[list->count].type = TOKEN_WORD;
-        int i = 0;
-        while (*p && !isspace((unsigned char)*p) && !is_special(*p))
-        {
-            if (i < TOKEN_SIZE - 1)
-            {
-                list->token[list->count].text[i++] = *p;
-            }
+
+        if (*p == '<') {
+            int result =
+                token_push(list,
+                           TOKEN_REDIRECT_IN,
+                           p,
+                           1);
+
+            if (result != TOKENIZE_OK)
+                return result;
 
             p++;
+            continue;
         }
-        list->token[list->count].text[i] = '\0';
-        // list->token[list->count].type = TOKEN_WORD;
-        list->count++;
+
+        if (*p == '|') {
+            int result =
+                token_push(list,
+                           TOKEN_PIPE,
+                           p,
+                           1);
+
+            if (result != TOKENIZE_OK)
+                return result;
+
+            p++;
+            continue;
+        }
+
+        if (*p == '&') {
+            int result =
+                token_push(list,
+                           TOKEN_BACKGROUND,
+                           p,
+                           1);
+
+            if (result != TOKENIZE_OK)
+                return result;
+
+            p++;
+            continue;
+        }
+
+        char *start = p;
+
+        while (*p &&
+               !isspace((unsigned char)*p) &&
+               !is_special(*p))
+            p++;
+
+        size_t length = (size_t)(p - start);
+
+        int result =
+            token_push(list,
+                       TOKEN_WORD,
+                       start,
+                       length);
+
+        if (result != TOKENIZE_OK)
+            return result;
     }
-}
-static Command *syntax_fail(ShellContext *ctx, Command *head, const char *msg)
-{
-    fprintf(stderr, "minishell: syntax error: %s\n", msg);
-    if (ctx) ctx->last_exit_status = 2;   /* 对齐 bash：语法错误退出码 2 */
-    command_free(head);
-    return NULL;
+
+    return TOKENIZE_OK;
 }
 
 Command *build_command(TokenList *list, ShellContext *ctx)
 {
-    Command *head = NULL;
-    Command *current = NULL;
-
-    head = new_command();
-    if (head == NULL) {
+    if (!list)
         return NULL;
-    }
-    current = head;
+
+    Command *head = new_command();
+
+    if (!head)
+        return memory_fail(ctx, NULL);
+
+    Command *current = head;
 
     for (int i = 0; i < list->count; i++) {
         switch (list->token[i].type) {
         case TOKEN_WORD:
             if (current->argc >= MAX_ARGS - 1)
-                return syntax_fail(ctx, head, "too many arguments");
+                return syntax_fail(ctx,
+                                   head,
+                                   "too many arguments");
+
             if (strcmp(list->token[i].text, "$?") == 0) {
                 char buffer[64];
-                snprintf(buffer, sizeof(buffer), "%d", ctx->last_exit_status);
-                current->argv[current->argc] = strdup(buffer);
+
+                int status =
+                    ctx
+                        ? ctx->last_exit_status
+                        : 0;
+
+                snprintf(buffer,
+                         sizeof(buffer),
+                         "%d",
+                         status);
+
+                current->argv[current->argc] =
+                    strdup(buffer);
             } else {
-                current->argv[current->argc] = strdup(list->token[i].text);
+                current->argv[current->argc] =
+                    strdup(list->token[i].text);
             }
-            if (current->argv[current->argc] == NULL)
-                return syntax_fail(ctx, head, "out of memory");
+
+            if (!current->argv[current->argc])
+                return memory_fail(ctx, head);
+
             current->argc++;
+
             break;
+
         case TOKEN_REDIRECT_IN:
-            if (i + 1 >= list->count || list->token[i + 1].type != TOKEN_WORD)
-                return syntax_fail(ctx, head, "expected filename after '<'");
-            current->redirect.input_file = strdup(list->token[i + 1].text);
-            if (current->redirect.input_file == NULL)
-                return syntax_fail(ctx, head, "out of memory");
+            if (i + 1 >= list->count ||
+                list->token[i + 1].type != TOKEN_WORD)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "expected filename after '<'"
+                );
+
+            if (current->redirect.input_file)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "duplicate input redirection"
+                );
+
+            current->redirect.input_file =
+                strdup(list->token[i + 1].text);
+
+            if (!current->redirect.input_file)
+                return memory_fail(ctx, head);
+
             i++;
+
             break;
+
         case TOKEN_REDIRECT_OUT:
-            if (i + 1 >= list->count || list->token[i + 1].type != TOKEN_WORD)
-                return syntax_fail(ctx, head, "expected filename after '>'");
-            current->redirect.output_file = strdup(list->token[i + 1].text);
-            if (current->redirect.output_file == NULL)
-                return syntax_fail(ctx, head, "out of memory");
+            if (i + 1 >= list->count ||
+                list->token[i + 1].type != TOKEN_WORD)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "expected filename after '>'"
+                );
+
+            if (current->redirect.output_file)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "duplicate output redirection"
+                );
+
+            current->redirect.output_file =
+                strdup(list->token[i + 1].text);
+
+            if (!current->redirect.output_file)
+                return memory_fail(ctx, head);
+
             current->redirect.append = 0;
+
             i++;
+
             break;
+
         case TOKEN_REDIRECT_APPEND:
-            if (i + 1 >= list->count || list->token[i + 1].type != TOKEN_WORD)
-                return syntax_fail(ctx, head, "expected filename after '>>'");
-            current->redirect.output_file = strdup(list->token[i + 1].text);
-            if (current->redirect.output_file == NULL)
-                return syntax_fail(ctx, head, "out of memory");
+            if (i + 1 >= list->count ||
+                list->token[i + 1].type != TOKEN_WORD)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "expected filename after '>>'"
+                );
+
+            if (current->redirect.output_file)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "duplicate output redirection"
+                );
+
+            current->redirect.output_file =
+                strdup(list->token[i + 1].text);
+
+            if (!current->redirect.output_file)
+                return memory_fail(ctx, head);
+
             current->redirect.append = 1;
+
             i++;
+
             break;
+
         case TOKEN_BACKGROUND:
+            if (i != list->count - 1)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "'&' must be the last token"
+                );
+
+            if (head->background)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "duplicate background operator"
+                );
+
             head->background = 1;
+
             break;
+
         case TOKEN_PIPE:
-            if (i + 1 >= list->count || list->token[i + 1].type != TOKEN_WORD)
-                return syntax_fail(ctx, head, "expected command after '|'");
-            Command *new = new_command();
-            if (new == NULL)
-                return syntax_fail(ctx, head, "out of memory");
-            current->next = new;
-            current = new;
+            if (current->argc == 0)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "missing command near '|'"
+                );
+
+            if (i + 1 >= list->count ||
+                list->token[i + 1].type != TOKEN_WORD)
+                return syntax_fail(
+                    ctx,
+                    head,
+                    "expected command after '|'"
+                );
+
+            Command *next = new_command();
+
+            if (!next)
+                return memory_fail(ctx, head);
+
+            current->next = next;
+            current = next;
+
             break;
         }
     }
 
-    Command *iterator = head;
-    while (iterator) {
-        if (iterator->argc == 0) {
-            return syntax_fail(ctx, head, "missing command near '|'");
-        }
+    for (Command *iterator = head;
+         iterator;
+         iterator = iterator->next) {
+        if (iterator->argc == 0)
+            return syntax_fail(
+                ctx,
+                head,
+                "missing command near '|'"
+            );
+
         iterator->argv[iterator->argc] = NULL;
-        iterator = iterator->next;
     }
 
     return head;
 }
 
-
-Command *new_command()
+Command *new_command(void)
 {
     Command *cmd = malloc(sizeof(Command));
-    if (cmd == NULL)
+
+    if (!cmd)
         return NULL;
+
     command_init(cmd);
+
     return cmd;
 }

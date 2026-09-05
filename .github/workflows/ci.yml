@@ -1,0 +1,148 @@
+name: MiniShell CI
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minishell-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  make-build-and-test:
+    name: Make Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cppcheck
+
+      - name: Show tool versions
+        run: |
+          gcc --version
+          make --version
+          cppcheck --version
+
+      - name: Run normal test suite
+        run: |
+          make clean
+          make check
+
+      - name: Run strict compiler gate
+        run: |
+          make clean
+          make strict
+
+      - name: Run sanitizer gate
+        run: |
+          make clean
+          make asan
+
+      - name: Run cppcheck
+        run: |
+          make cppcheck
+
+      - name: Check repository formatting
+        run: git diff --check
+
+  cmake-build-and-test:
+    name: CMake ${{ matrix.build_type }} Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type:
+          - Debug
+          - Release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake
+
+      - name: Show tool versions
+        run: |
+          gcc --version
+          cmake --version
+          ctest --version
+
+      - name: Configure CMake
+        run: |
+          cmake -S . \
+            -B "${RUNNER_TEMP}/minishell-cmake-${{ matrix.build_type }}" \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DMINISHELL_WARNINGS_AS_ERRORS=ON
+
+      - name: Build with CMake
+        run: |
+          cmake --build \
+            "${RUNNER_TEMP}/minishell-cmake-${{ matrix.build_type }}" \
+            --parallel
+
+      - name: Run CTest
+        run: |
+          ctest \
+            --test-dir "${RUNNER_TEMP}/minishell-cmake-${{ matrix.build_type }}" \
+            --output-on-failure
+
+  arm64-cross-build:
+    name: ARM64 Cross Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install ARM64 toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            file \
+            gcc-aarch64-linux-gnu
+
+      - name: Show cross compiler version
+        run: |
+          aarch64-linux-gnu-gcc --version
+
+      - name: Build ARM64 binary
+        run: |
+          make clean
+          make arm64
+
+      - name: Verify ARM64 binary
+        run: |
+          file build/arm64/minishell
+          file build/arm64/minishell | grep -q "ARM aarch64"
+
+      - name: Build ARM64 deployment package
+        run: |
+          make arm64-package
+          test -f dist/arm64/bin/minishell
+          test -f dist/arm64/config/config.conf
+          file dist/arm64/bin/minishell | grep -q "ARM aarch64"
